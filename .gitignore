@@ -26,3 +26,5 @@
 *.exe
 *.out
 *.app
+
+generator/Testgenerator.dSYM/Contents/Resources/DWARF/Testgenerator
