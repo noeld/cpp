@@ -173,7 +173,7 @@ int main (int argc, char const *argv[])
 	}
 	try {
 
-		std::array<char, 2> ge {{'M', 'W'}};
+		std::array<std::string, 2> ge {{"M", "W"}};
 		FileList flwv(wvornamen); std::cerr << flwv.size() << " weibliche Vornamen\n";
 		FileList flmv(mvornamen); std::cerr << flmv.size() << " männliche Vornanen\n";
 		FileList flnn(nachnamen); std::cerr << flnn.size() << " Nachnamen\n";
@@ -186,7 +186,8 @@ int main (int argc, char const *argv[])
 		
 		auto ggg = [&ge, &flwv, &flmv, &flnn, &flplz, &mtx, &line, &gugl, &gngc, &rthreads] (uint32_t idfrom, uint32_t idto, short nr) {
 			rthreads.fetch_or(1 << nr);
-			std::ostringstream tmpout;
+			//std::ostringstream tmpout;
+			std::string tmpout;
 			int seed = std::chrono::system_clock::now().time_since_epoch().count();
 			std::default_random_engine generator(seed);
 			std::uniform_int_distribution<int> gedist(0, 1);
@@ -200,28 +201,39 @@ int main (int argc, char const *argv[])
 				; return i; };
 			std::uniform_int_distribution<int> plzdist(0, flplz.size()-1);
 			auto rnplz = std::bind(plzdist, generator);
-			const char* trenn = ";";
+			const std::string trenn = ";";
 			auto lastid = idfrom;
 			for (auto i = idfrom; i < idto; ++i) {
 				//int g = rnge();
 				int g = ++geit;
-				char geschl = ge[g];
-				tmpout << i << trenn << geschl << trenn; 
-				if ('M' == geschl) { tmpout << flmv[rngeo(flmv.size()-1)]; } else { tmpout << flwv[rngeo(flwv.size()-1)]; } 
-				tmpout << trenn << flnn[rngeo(flnn.size()-1)] << trenn << flplz[rnplz()] << std::endl;
+				const auto& geschl = ge[g];
+				//tmpout << i << trenn << geschl << trenn; 
+				tmpout.append(trenn).append(geschl).append(trenn);
+				if (0 == g) {
+					//tmpout << flmv[rngeo(flmv.size()-1)]; 
+					tmpout.append(flmv[rngeo(flmv.size()-1)]);
+				} else {
+					//tmpout << flwv[rngeo(flwv.size()-1)]; 
+					tmpout.append(flwv[rngeo(flwv.size()-1)]);
+				} 
+				//tmpout << trenn << flnn[rngeo(flnn.size()-1)] << trenn << flplz[rnplz()] << std::endl;
+				tmpout.append(trenn).append(flnn[rngeo(flnn.size()-1)]).append(trenn).append(flplz[rnplz()]).append("\n");
 				if (i % lintervall == 0) {
 					{
 						std::lock_guard<std::mutex> lock(mtx);
-						std::cout << tmpout.str();
+						//std::cout << tmpout.str();
+						std::cout << tmpout;
 					}
-					tmpout.str("");
+					//tmpout.str("");
+					tmpout.clear();
 					line+=i-lastid;
 					lastid=i;
 				}
 			}
 			{
 				std::lock_guard<std::mutex> lock(mtx);
-				std::cout << tmpout.str();
+				//std::cout << tmpout.str();
+				std::cout << tmpout;
 			}
 			line+=idto-lastid;
 			gugl+=ugl;
