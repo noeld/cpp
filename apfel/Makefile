@@ -5,7 +5,7 @@ CPPFLAGS=-g -std=c++14 -I/Users/arnold/Documents/prg/libraries/boost_1_56_0/ -I/
 LDFLAGS=-g
 LDLIBS=
 
-SRCS=apfel.cpp PicData.cpp
+SRCS=apfel.cpp PicData.cpp Image.cpp
 OBJS=$(subst .cpp,.o,$(SRCS))
 
 all: tool

@@ -1,0 +1,14 @@
+#include <iostream>
+#include <iterator>
+#include <fstream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+int main (int argc, char const *argv[])
+{
+	int ret = 0;
+	vector<string> params(argv, argv + argc);
+	return ret;
+}
