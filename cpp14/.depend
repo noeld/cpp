@@ -470,6 +470,51 @@ duplicate.o: duplicate.cpp \
   /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/integer_fwd.hpp \
   /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/functional/hash/extensions.hpp \
   /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/detail/container_fwd.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/detail/compat_workarounds.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/detail/config_macros.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/detail/workarounds_gcc-2_95.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/detail/workarounds_stlport.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/format_fwd.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/internals_fwd.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/internals.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/optional.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/optional/optional.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/core/explicit_operator_bool.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/optional/bad_optional_access.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/type.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/type_traits/has_nothrow_constructor.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/type_traits/has_trivial_constructor.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/type_traits/is_base_of.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/type_traits/is_base_and_derived.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/detail/reference_content.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/none.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/none_t.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/utility/compare_pointees.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/utility/in_place_factory.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/utility/detail/in_place_factory_prefix.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/preprocessor/punctuation/paren.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/preprocessor/iteration/iterate.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/preprocessor/slot/slot.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/preprocessor/slot/detail/def.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/preprocessor/iteration/detail/iter/forward1.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/preprocessor/iteration/detail/bounds/lower1.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/preprocessor/slot/detail/shared.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/preprocessor/iteration/detail/bounds/upper1.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/utility/detail/in_place_factory_suffix.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/optional/optional_fwd.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/alt_sstream.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/utility/base_from_member.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/alt_sstream_impl.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/format_class.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/exceptions.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/format_implementation.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/group.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/feed_args.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/detail/msvc_disambiguater.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/parsing.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/free_funcs.hpp \
+  /Users/arnold/Documents/prg/libraries/boost_1_56_0/boost/format/detail/unset_macros.hpp \
   /Users/arnold/Documents/prg/libraries/cryptopp563/include/cryptopp/cryptlib.h \
   /Users/arnold/Documents/prg/libraries/cryptopp563/include/cryptopp/config.h \
   /Users/arnold/Documents/prg/libraries/cryptopp563/include/cryptopp/stdcpp.h \
