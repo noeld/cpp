@@ -15,6 +15,7 @@
 #include <cryptopp/filters.h>
 #include <cryptopp/hex.h>
 #include <cryptopp/sha3.h>
+#include "ThreadPool.h"
 
 namespace b = boost;
 namespace bfs = boost::filesystem;
@@ -135,22 +136,23 @@ int main (int argc, char const *argv[])
 				size_t i = 0;
 				for (const auto& f : e.second) {
 					++i;
-					std::cout << i << "\t" << f->path_ << std::endl;
+					std::cout << boost::format{"%2d %s"} % i % f->path_ << std::endl;
 				}
 				captureoutput = 0;
 			}
 		}
 		obs.join();
 		std::cerr << boost::format{"%10d files added"} % files_added << std::endl;
+		std::cerr << boost::format{"%10d files skipped"} % files_skipped << std::endl;
 		std::cerr << boost::format{"%10d Megabytes size alltogether"} % (files_size/1024/1024) << std::endl;
 		std::cerr << boost::format{"%10d files hashed (%3.1f%%)"} % digested % (static_cast<float>(digested)/files_added*100.0f) << std::endl;
 		std::cerr << boost::format{"%10d Megabytes hashed (%3.1f%%)"} % (digested_bytes/1024/1024) % (static_cast<float>(digested_bytes)/files_size*100.0f) << std::endl;
 		std::cerr << boost::format{"%10d Megabytes save potential"} % (save_potential/1024/1024) << std::endl;
+		// ThreadPool::ThreadPool tp(4);
 	} catch(const std::exception& e) {
 		std::cerr << e.what() << std::endl;
 	} catch(...) {
 		std::cerr << "Unknown exception" << std::endl;
 	}
-
 	return ret;
 }
