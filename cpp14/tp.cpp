@@ -1,16 +1,12 @@
-#pragma once
-
 #include <iostream>
 #include <thread>
-#include <memory>
-#include <chrono>
-#include <vector>
-#include <queue>
 #include <mutex>
-#include <condition_variable>
-#include <boost/lockfree/queue.hpp>
+#include <vector>
+#include <string>
+#include <memory>
+#include <queue>
+#include <atomic>
 
-namespace ThreadPool {
 template<typename T>
 class LockedQueue
 {
@@ -47,7 +43,7 @@ public:
 	void dequeue(T&& e) {
 		std::unique_lock<std::mutex> l(m_);
 		std::cerr << __FUNCTION__ << std::endl;
-		c_.wait(l, [this](){ return q_.size > 0; });
+		c_.wait(l, [this](){ return q_.size() > 0; });
 		e = std::move(q_.front());
 		q_.pop();
 	}
@@ -66,10 +62,8 @@ public:
 		//c_.notify_all();
 		c_.wait(l, [this]{ return q_.empty(); });
 	}
-private:
-	/* data */
 };
-struct ThreadPool;
+
 class Task {
 public:
 	using time_t = std::chrono::high_resolution_clock::time_point;
@@ -90,7 +84,10 @@ public:
 		run();
 		finished_at_ = std::chrono::high_resolution_clock::now();
 	}
-	virtual ~Task() = default;
+	virtual ~Task() {
+		std::cerr << "Task duration: " << duration().count() << std::endl;
+		std::cerr << "Task duration_net: " << duration_net().count() << std::endl;
+	};
 };
 struct SystemTask : public Task {
 };
@@ -106,80 +103,65 @@ struct LambdaTask : public Task {
 		f_();
 	}
 };
-struct ThreadPool {
-	using concurrency_t = decltype(std::thread::hardware_concurrency());
-	concurrency_t n_;
-	using taskptr_t = std::unique_ptr<Task>;
-	LockedQueue<taskptr_t> q_;
-	LockedQueue<taskptr_t> finished_;
-	class Worker;
-	friend class ThreadPool::Worker;
-	class Worker
-	{
-	public:
-		explicit Worker (ThreadPool& t) : tp_{t}, thread_(std::ref(*this)) {}	// type conversion
-		Worker() = delete;									// default ctor
-		Worker(const Worker&) =delete;							// copy ctor
-		Worker(Worker&& w) : tp_(w.tp_), thread_(std::move(w.thread_)) {
-			keeprunning_ = w.keeprunning_.load();
-		}	// move ctor
-		Worker& operator=(const Worker&) = delete;				// copy assignment
-		Worker& operator=(Worker&&) = delete;					// move assignment
-		virtual ~Worker (){
-			std::cerr << __FUNCTION__ << std::endl;
-			if (thread_.joinable()) {
-				this->signal_stop();
-				thread_.join();
-			}
-		};
-		void operator()() {
-			size_t tasknum {0};
-			std::cerr << "Thread gestartet: " << std::this_thread::get_id()  << std::endl; 
-			taskptr_t t;
-			while(keeprunning_.load() == 1) {
-				std::cerr << "Waiting " << std::this_thread::get_id() << std::endl;
-				tp_.q_.dequeue(t);
-				++tasknum;
-				std::cerr << "Got " << tasknum << " " << typeid(*t).name() << std::this_thread::get_id() << std::endl;
-				(*t)();
-				tp_.finished_.enqueue(std::move(t));
-			}
-			std::cerr << "Thread fertig: " << std::this_thread::get_id()  << std::endl; 
-		}
-		void signal_stop() {
-			keeprunning_ = 0;
-		}
-		bool is_active() const noexcept {
-			return keeprunning_ == 1;
-		}
-	private:
-		ThreadPool& tp_;
-		std::atomic<int> keeprunning_ {1};
-		std::thread thread_;
-	};
 
-	std::vector<Worker> workers_;
-	explicit ThreadPool(concurrency_t n = std::thread::hardware_concurrency()) : n_{n} {
-		for(concurrency_t i = 0; i < n_; ++i) {
-			workers_.emplace_back(*this);
+class ThreadPool
+{
+	LockedQueue<Task*> waiting_;
+	LockedQueue<Task*> finished_;
+public:
+	explicit ThreadPool (unsigned n = std::thread::hardware_concurrency()) {
+		auto f = [this]{
+			std::cerr << "Thread started " << std::this_thread::get_id() << std::endl;
+			while(true) {
+				Task* e = nullptr;
+				waiting_.dequeue(e);
+				if (e == nullptr) 
+					break;
+				(*e)();
+				finished_.enqueue(std::move(e));
+			}
+			std::cerr << "Thread finished " << std::this_thread::get_id() << std::endl;
+		};
+		for(unsigned i = 0; i<n; ++i) {
+			t_.emplace_back(f);
+		}
+	}	// type conversion
+	//ThreadPool() =delete;									// default ctor
+	ThreadPool(const ThreadPool&) =delete;							// copy ctor
+	ThreadPool(ThreadPool&& t) : t_{std::move(t.t_)} {}								// move ctor
+	ThreadPool& operator=(const ThreadPool&) =delete;				// copy assignment
+	ThreadPool& operator=(ThreadPool&& t) {
+		if (&t != this) {
+			t_ = std::move(t.t_);
+		}
+		return *this;
+	};					// move assignment
+	virtual ~ThreadPool () {
+		for(auto& t : t_) {
+			if (t.joinable())
+				t.join();
 		}
 	}
-	ThreadPool(const ThreadPool&) =delete;
-	void stopWorkers() {
-		std::cerr << __FUNCTION__ << std::endl;
-		for(auto& w: workers_) {
-			w.signal_stop();
-			q_.enqueue(std::move(ThreadPool::taskptr_t(new StopThreadTask)));
-		}
-		q_.wait_empty();
-		workers_.clear();
+	void enqueue(Task* t) {
+		waiting_.enqueue(t);
 	}
-	~ThreadPool() {
-		std::cerr << __FUNCTION__ << std::endl;
-		stopWorkers();
+	void dequeue(Task*&& t) {
+		finished_.dequeue(std::move(t));
 	}
-	auto& finished() { return finished_; }
-	auto& tasks() { return q_; }
-	auto n() const noexcept { return n_; }
+private:
+	std::vector<std::thread> t_;
 };
+
+int main (int argc, char const *argv[])
+{
+	int ret {0};
+	ThreadPool tp;
+	Task* t1 = new LambdaTask<std::function<void(void)>>([]{ std::cout << "Das ist der erste Task" << std::endl; std::this_thread::sleep_for(std::chrono::milliseconds(3000)); });
+	Task* t2 = new LambdaTask<std::function<void(void)>>([]{ std::cout << "Das ist der andere Task" << std::endl; });
+	tp.enqueue(t1);
+	tp.enqueue(t2);
+	
+	delete t1;
+	delete t2;
+	return ret;
 }

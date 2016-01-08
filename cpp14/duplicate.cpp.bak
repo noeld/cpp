@@ -15,7 +15,6 @@
 #include <cryptopp/filters.h>
 #include <cryptopp/hex.h>
 #include <cryptopp/sha3.h>
-#include "ThreadPool.h"
 
 namespace b = boost;
 namespace bfs = boost::filesystem;
@@ -89,8 +88,6 @@ int main (int argc, char const *argv[])
 				}
 			} else {
 				sizemap << SFile(pp);
-				++files_added;
-				files_size += bfs::file_size(pp);
 			}
 		}
 		//std::cerr << "Sizemap contains " << sizemap.size() << " entries." << std::endl << files_skipped << " files were skipped" << std::endl << files_added << " files were added." << std::endl;
@@ -100,12 +97,12 @@ int main (int argc, char const *argv[])
 		size_t digested{0};
 		size_t digested_bytes{0};
 		size_t save_potential{0};
-		std::thread obs([&processed, &captureoutput, &digested, files_added]() {
+		std::thread obs([&processed, &captureoutput, files_added]() {
 			while(1) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(500));
 				size_t sp = processed;
 				if (!captureoutput) {
-					std::cerr << boost::format{"%5.2f (%d)"} % (sp/static_cast<float>(files_added)*100.0f) % digested << "%\r";
+					std::cerr << boost::format{"%5.2f"} % (sp/static_cast<float>(files_added)*100.0f) << "%\r";
 				}
 				if (sp == files_added)
 					break;
@@ -117,6 +114,7 @@ int main (int argc, char const *argv[])
 				continue;
 			}
 			//std::cerr << s.first << ": " << s.second.size() << " entries" << std::endl;
+			save_potential += s.first * (s.second.size()-1);
 			hm.clear();
 			for(const auto& f : s.second) {
 				auto d = f.digest();
@@ -132,7 +130,6 @@ int main (int argc, char const *argv[])
 			for(const auto& e : hm) {
 				if (e.second.size() <= 1)
 					continue;
-				save_potential += s.first * (e.second.size()-1);
 				captureoutput = 1;
 				std::cout << "[" << s.first << ", " << e.first << "]" << " " << e.second.size() << " entries" << std::endl;
 				size_t i = 0;
@@ -150,23 +147,11 @@ int main (int argc, char const *argv[])
 		std::cerr << boost::format{"%10d files hashed (%3.1f%%)"} % digested % (static_cast<float>(digested)/files_added*100.0f) << std::endl;
 		std::cerr << boost::format{"%10d Megabytes hashed (%3.1f%%)"} % (digested_bytes/1024/1024) % (static_cast<float>(digested_bytes)/files_size*100.0f) << std::endl;
 		std::cerr << boost::format{"%10d Megabytes save potential"} % (save_potential/1024/1024) << std::endl;
-/*		ThreadPool::ThreadPool tp(1);
-		std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-		for (int i = 0; i<1; ++i) {
-			ThreadPool::ThreadPool::taskptr_t t(new ThreadPool::LambdaTask<std::function<void(void)>>([i]{ std::cout << "LambdaTask " << i << std::endl;}));
-			tp.tasks().enqueue(std::move(t));
-		}
-		tp.stopWorkers();
-		std::cout << "Ergebnis" << std::endl;
-		ThreadPool::ThreadPool::taskptr_t t;
-		while(tp.finished().try_dequeue(t)) {
-			std::cout << __FUNCTION__ << std::endl;
-			std::cout << t->duration_net().count() << std::endl;
-		}*/
 	} catch(const std::exception& e) {
 		std::cerr << e.what() << std::endl;
 	} catch(...) {
 		std::cerr << "Unknown exception" << std::endl;
 	}
+
 	return ret;
 }
