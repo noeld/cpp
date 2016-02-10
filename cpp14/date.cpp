@@ -6,6 +6,7 @@
 #include <string>
 #include <array>
 #include <boost/format.hpp>
+#include <utility>
 
 using namespace std;
 
@@ -24,17 +25,25 @@ public:
 	explicit Date (unsigned yyyymmdd) : Date(yyyymmdd/10000, (yyyymmdd/100)%100, yyyymmdd%100) 
 	{}
 	Date() =default;									// default ctor
-	Date(const Date&);							// copy ctor
-	Date(Date&&);								// move ctor
-	Date& operator=(const Date&);				// copy assignment
-	Date& operator=(Date&&);					// move assignment
+	Date(const Date& d) : val_{d.val_.yyyy, d.val_.mm, d.val_.dd}{}							// copy ctor
+	//Date(Date&&);								// move ctor
+	Date& operator=(const Date& d) {
+		if (this != &d) {
+			val_.yyyy = d.val_.yyyy;
+			val_.mm = d.val_.mm;
+			val_.dd = d.val_.dd;
+		}
+		return *this;
+	}				// copy assignment
+	//Date& operator=(Date&&);					// move assignment
 	~Date ()
 	{}
 	
-	unsigned year() const noexcept { return val_.yyyy; }
-	unsigned month() const noexcept { return val_.mm; }
-	unsigned day() const noexcept { return val_.dd; }
-	unsigned yyyymmdd() const noexcept { return year()*1000 + month() * 100 + day(); }
+	constexpr unsigned year() const noexcept { return val_.yyyy; }
+	constexpr unsigned month() const noexcept { return val_.mm; }
+	constexpr unsigned day() const noexcept { return val_.dd; }
+	constexpr unsigned yyyymmdd() const noexcept { return year()*10000 + month() * 100 + day(); }
+	explicit constexpr operator unsigned() const noexcept { return yyyymmdd(); }
 	
 	Date firstOfYear() const noexcept { return Date(year(), 1, 1); }
 	Date lastOfYear() const noexcept { return Date(year(), 12, 31); }
@@ -62,6 +71,13 @@ public:
 			z = (7 + z)%7;
 		//cout << "(" << zz << ", " << z << ")";
 		return z;
+	}
+	unsigned weekOfYear() const noexcept {
+		auto wfoy = firstOfYear().weekday();
+		auto doy = dayOfYear();
+		auto firstweeknr = (wfoy > 0 && wfoy < 5)?1:0;
+		auto nw = (doy / 7) - (1 - firstweeknr);
+		return nw;
 	}
 	
 	
@@ -99,6 +115,11 @@ public:
 		}
 		return *this;
 	}
+	Date operator++(int) {
+		Date tmp(*this);
+		this->operator++();
+		return tmp;
+	}
 	Date& operator--() {
 		auto d = day() - 1;
 		if (0 == d) {
@@ -116,6 +137,26 @@ public:
 		val_.dd = d;
 		return *this;
 	}
+	Date operator--(int) {
+		Date tmp(*this);
+		this->operator--();
+		return tmp;
+	}
+	constexpr bool operator<(const Date& d) const noexcept {
+		return yyyymmdd() < d.yyyymmdd(); 
+	}
+	constexpr bool operator==(const Date& d) const noexcept {
+		return !((*this < d) && (d < *this));
+	}
+	constexpr bool operator>(const Date& d) const noexcept {
+		return d < *this;
+	}
+	constexpr bool operator<=(const Date& d) const noexcept {
+		return !(d < *this);
+	}
+	constexpr bool operator>=(const Date& d) const noexcept {
+		return !(*this < d);
+	}
 private:
 	static const std::array<unsigned, 13> dom_;
 	static const std::array<unsigned, 12> doma_;
@@ -126,6 +167,7 @@ private:
 		unsigned mm   :  4;
 		unsigned dd   :  5;
 	} val_ {1,1,1};
+//	friend void std::swap(Date&, Date&);
 };
 
 constexpr const std::array<unsigned, 13> Date::dom_  = {{ 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }};
@@ -155,7 +197,21 @@ int main (int argc, char const *argv[])
 		cout << i << ": " << n << endl;
 	*/
 	for(Date d(2015,8,31); d.year() > 2013; --d) {
-		cout << d << " - " << boost::format{"%3d - %d - %s"} % d.dayOfYear() % d.weekday() % Date::dayName(d.weekday())<< endl;
+		cout << d << " - " << boost::format{"%3d - %d - %s - KW%02s"} % d.dayOfYear() % d.weekday() % Date::dayName(d.weekday()) % d.weekOfYear() << endl;
 	}
+	for(Date d(1,1,1), e(9999,12,31); d<e; ++d) {
+		Date tmp(d.year(), d.month(), d.day());
+		if (tmp.month() == 1 and tmp.day() == 1) {
+			cout << tmp.year() << " ";
+		}
+	}
+	cout << endl;
+	for(Date d(9999,12,31), e(1,1,1); d>e; --d) {
+		Date tmp(d.year(), d.month(), d.day());
+		if (tmp.month() == 1 and tmp.day() == 1) {
+			cout << tmp.year() << " ";
+		}
+	}
+	cout << endl;
 	return ret;
 }
