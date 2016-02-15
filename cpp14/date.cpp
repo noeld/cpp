@@ -57,6 +57,7 @@ public:
 			++d;
 		return d;
 	}
+	
 	unsigned weekday() const noexcept {
 		// http://www.timeanddate.com/date/doomsday-weekday.html
 		int a1 = (year() % 100)/12;
@@ -70,13 +71,14 @@ public:
 		if (zz < 0)
 			z = (7 + z)%7;
 		//cout << "(" << zz << ", " << z << ")";
-		return z;
+		auto wt = std::array<unsigned, 7>{{7, 1, 2, 3, 4, 5, 6}}[z];
+		return wt;
 	}
 	unsigned weekOfYear() const noexcept {
-		auto wfoy = firstOfYear().weekday();
+		auto wfoy = firstOfYear().weekday()-1;
 		auto doy = dayOfYear();
 		auto firstweeknr = (wfoy > 0 && wfoy < 5)?1:0;
-		auto nw = (doy / 7) - (1 - firstweeknr);
+		auto nw = (doy / 7) + firstweeknr;
 		return nw;
 	}
 	
@@ -94,8 +96,13 @@ public:
 		}
 		return d;
 	}
+	static unsigned daysSinceEpoch(unsigned yyyy, unsigned mm, unsigned dd) {
+		static constexpr auto d400y = 365 * 400 + 100 - 4 + 1;
+		auto ys400 = yyyy / 400 * d400y;
+		auto yyy = yyyy % 400 + 1;
+	}
 	static const char* dayName(unsigned d) {
-		if (d > 6)
+		if (d < 1 || d > 7)
 			throw "Weekday out of range";
 		return days_[d];
 	}
@@ -161,7 +168,7 @@ private:
 	static const std::array<unsigned, 13> dom_;
 	static const std::array<unsigned, 12> doma_;
 	static const std::array<unsigned, 4> anchor_;
-	static const std::array<const char*, 7> days_;
+	static const std::array<const char*, 8> days_;
 	struct ct {
 		unsigned yyyy : 14;
 		unsigned mm   :  4;
@@ -173,7 +180,7 @@ private:
 constexpr const std::array<unsigned, 13> Date::dom_  = {{ 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }};
 constexpr const std::array<unsigned, 12> Date::doma_ = {{ 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 }};
 constexpr const std::array<unsigned, 4> Date::anchor_ = {{ 2, 6, 5, 3 }};
-constexpr const std::array<const char*, 7> Date::days_ = {{ "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa" }};
+constexpr const std::array<const char*, 8> Date::days_ = {{ "", "Mo", "Di", "Mi", "Do", "Fr", "Sa", "So" }};
 
 ostream& operator<<(ostream& o, const Date& d) {
 	return o << boost::format{"%04d-%02d-%02d"} % d.year() % d.month() % d.day();
@@ -196,9 +203,10 @@ int main (int argc, char const *argv[])
 	for(auto i = 1, n = 0; i < 13; ++i, n += Date::dom_[i-1] )
 		cout << i << ": " << n << endl;
 	*/
-	for(Date d(2015,8,31); d.year() > 2013; --d) {
+	for(Date d(2016,2,28), de(2015,12,25); d > de; --d) {
 		cout << d << " - " << boost::format{"%3d - %d - %s - KW%02s"} % d.dayOfYear() % d.weekday() % Date::dayName(d.weekday()) % d.weekOfYear() << endl;
 	}
+	/*
 	for(Date d(1,1,1), e(9999,12,31); d<e; ++d) {
 		Date tmp(d.year(), d.month(), d.day());
 		if (tmp.month() == 1 and tmp.day() == 1) {
@@ -213,5 +221,6 @@ int main (int argc, char const *argv[])
 		}
 	}
 	cout << endl;
+	*/
 	return ret;
 }

@@ -34,9 +34,8 @@ ostream& operator<<(ostream& o, const Str2Bin<T>& s) {
 int main (int argc, char const *argv[])
 {
 	int ret = 0;
-	int n = -5;
-	unsigned u = 5;                        
-	for(int i = -40; i <= 40; ++i) {      
+	int max = 255;
+	for(int i = -max; i <= max; ++i) {      
 		SInt s(i);                                                                                         
 		int j = SInt::convertBack(s);
 		cout << boost::format{"%3d _ "} % i << Str2Bin<int>(i) 
@@ -44,6 +43,5 @@ int main (int argc, char const *argv[])
 			<< Str2Bin<unsigned>(s) << boost::format{" _ %3d _ "} % j 
 			<< Str2Bin<int>(j) << endl;
 	}
-	cout << Str2Bin<int>(n) << endl;
-	return 0;
+	return ret;
 }
