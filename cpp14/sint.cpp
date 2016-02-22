@@ -31,6 +31,8 @@ ostream& operator<<(ostream& o, const Str2Bin<T>& s) {
 	return o;
 }
 
+
+
 int main (int argc, char const *argv[])
 {
 	int ret = 0;

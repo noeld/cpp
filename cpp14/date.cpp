@@ -19,8 +19,11 @@ public:
 			throw "year out of range";
 		if (1 > mm || 12 < mm)
 			throw "month out of range";
-		if (1 > dd || daysOfMonth(yyyy, mm) < dd)
+		if (1 > dd || daysOfMonth(yyyy, mm) < dd) {
+			cout << "Days out of range! yyyy:" << yyyy << " mm: " << mm << " dd: " << dd << endl;
+			cout.flush();
 			throw "days ot of range";
+		}
 	}	// type conversion
 	explicit Date (unsigned yyyymmdd) : Date(yyyymmdd/10000, (yyyymmdd/100)%100, yyyymmdd%100) 
 	{}
@@ -96,10 +99,50 @@ public:
 		}
 		return d;
 	}
-	static unsigned daysSinceEpoch(unsigned yyyy, unsigned mm, unsigned dd) {
-		static constexpr auto d400y = 365 * 400 + 100 - 4 + 1;
+	static Date epoch() noexcept { return Date(1,1,1); }
+	static constexpr auto d400y = 365 * 400 + 100 - 4 + 1;
+	static constexpr auto d100y = 365 * 100 + 25 - 1;
+	static constexpr auto d4y = 365 * 4 + 1;
+	static constexpr auto d1y = 365;
+	constexpr unsigned daysSinceEpoch() const {
+		auto yyyy = year() - 1;
 		auto ys400 = yyyy / 400 * d400y;
-		auto yyy = yyyy % 400 + 1;
+		auto yyy = yyyy % 400;
+		auto ys100 = yyy / 100 * d100y;
+		auto yy = yyy % 100;
+		auto ys4 = yy / 4 * d4y;
+		auto y = yy % 4;
+		auto ys1 = y * d1y;
+		unsigned result = ys400 + ys100 + ys4 + ys1 + dayOfYear();
+		return result;
+	}
+	static Date fromDaysSinceEpoch(unsigned d) {
+		unsigned tmp = d;
+		unsigned yyyy = tmp / d400y * 400;
+		tmp %= d400y;
+		yyyy += tmp / d100y * 100;
+		tmp %= d100y;
+		yyyy += tmp / d4y * 4;
+		tmp %= d4y;
+		yyyy += tmp / d1y;
+		tmp %= d1y;
+		yyyy += 1;
+		auto ily = isLeapYear(yyyy);
+		unsigned m;
+		unsigned ld;
+		for(m = doma_.size()-1; m != 0; --m) {
+			ld = (ily && m>1)?1:0;
+			if ((doma_[m]+ld) < tmp)
+				break;
+		}
+		tmp -= doma_[m] +ld;
+		++m; // months from 1 - 12
+		if (tmp == 0) {
+			Date dd(yyyy, m, 1);
+			--dd;
+			return dd;
+		}
+		return Date(yyyy, m, tmp);
 	}
 	static const char* dayName(unsigned d) {
 		if (d < 1 || d > 7)
@@ -148,6 +191,9 @@ public:
 		Date tmp(*this);
 		this->operator--();
 		return tmp;
+	}
+	unsigned operator-(const Date& d) {
+		return this->daysSinceEpoch() - d.daysSinceEpoch();
 	}
 	constexpr bool operator<(const Date& d) const noexcept {
 		return yyyymmdd() < d.yyyymmdd(); 
@@ -203,9 +249,39 @@ int main (int argc, char const *argv[])
 	for(auto i = 1, n = 0; i < 13; ++i, n += Date::dom_[i-1] )
 		cout << i << ": " << n << endl;
 	*/
-	for(Date d(2016,2,28), de(2015,12,25); d > de; --d) {
-		cout << d << " - " << boost::format{"%3d - %d - %s - KW%02s"} % d.dayOfYear() % d.weekday() % Date::dayName(d.weekday()) % d.weekOfYear() << endl;
+	auto printd = [](const Date& d) {
+		auto dse = d.daysSinceEpoch();
+		cout << d << " - " << boost::format{"%3d - %d - %s - KW%02s - %6d"} 
+			% d.dayOfYear() % d.weekday() % Date::dayName(d.weekday()) % d.weekOfYear() % dse << " - ";
+		cout.flush();
+		try {
+			auto dfd = Date::fromDaysSinceEpoch(dse);
+			cout << dfd << endl;
+		} catch(const char* e) {
+			cout << "Exception " << e << endl;
+		}
+	};
+	for(Date d(1,1,1), de(800,12,31); d < de; ++d) {
+		printd(d);
 	}
+	printd(Date(10101));
+	printd(Date(10102));
+	printd(Date(10201));
+	printd(Date(10301));
+	printd(Date(11231));
+	printd(Date(20101));
+	printd(Date(30101));
+	printd(Date(40101));
+	printd(Date(50101));
+	printd(Date(990101));
+	printd(Date(1000101));
+	printd(Date(1010101));
+	printd(Date(3990101));
+	printd(Date(4000101));
+	printd(Date(4010101));
+	printd(Date(10000101));
+	printd(Date(10010101));
+	printd(Date(20000101));
 	/*
 	for(Date d(1,1,1), e(9999,12,31); d<e; ++d) {
 		Date tmp(d.year(), d.month(), d.day());
