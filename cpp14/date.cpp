@@ -105,7 +105,7 @@ public:
 	static constexpr auto d4y = 365 * 4 + 1;
 	static constexpr auto d1y = 365;
 	constexpr unsigned daysSinceEpoch() const {
-		auto yyyy = year() - 1;
+		auto yyyy = year();
 		auto ys400 = yyyy / 400 * d400y;
 		auto yyy = yyyy % 400;
 		auto ys100 = yyy / 100 * d100y;
@@ -126,7 +126,7 @@ public:
 		tmp %= d4y;
 		yyyy += tmp / d1y;
 		tmp %= d1y;
-		yyyy += 1;
+		//yyyy += 1;
 		auto ily = isLeapYear(yyyy);
 		unsigned m;
 		unsigned ld;
@@ -137,11 +137,11 @@ public:
 		}
 		tmp -= doma_[m] +ld;
 		++m; // months from 1 - 12
-		if (tmp == 0) {
+		/*if (tmp == 0) {
 			Date dd(yyyy, m, 1);
 			--dd;
 			return dd;
-		}
+		}*/
 		return Date(yyyy, m, tmp);
 	}
 	static const char* dayName(unsigned d) {
@@ -200,6 +200,9 @@ public:
 	}
 	constexpr bool operator==(const Date& d) const noexcept {
 		return !((*this < d) && (d < *this));
+	}
+	constexpr bool operator!=(const Date& d) const noexcept {
+		return (*this < d) || (d < *this);
 	}
 	constexpr bool operator>(const Date& d) const noexcept {
 		return d < *this;
@@ -261,8 +264,10 @@ int main (int argc, char const *argv[])
 			cout << "Exception " << e << endl;
 		}
 	};
-	for(Date d(1,1,1), de(800,12,31); d < de; ++d) {
-		printd(d);
+	for(Date d(1,1,1), de(2100,12,31); d < de; ++d) {
+		Date dfd = Date::fromDaysSinceEpoch(d.daysSinceEpoch());
+		if (dfd != d)
+			printd(d);
 	}
 	printd(Date(10101));
 	printd(Date(10102));
