@@ -73,7 +73,28 @@ ostream& operator<<(ostream& o, const window<T>& w) {
 	return o;
 }
 
-constexpr const array<char, 13> ch = {{ ' ', '.', ',', ':', ';', '+', 'i', 'I', '%', 'H', '8', 'M', '#'}};
+struct pxmap {
+	pxmap(unsigned maxit, unsigned width, unsigned height)
+		: maxit_{maxit+1}, width_{width}, height_{height}, px_(width_ * height_)
+	{}
+	unsigned maxit_;
+	unsigned width_;
+	unsigned height_;
+	vector<unsigned> px_;
+	static const array<char, 14> ch_; // = {{ ' ', '.', ',', ':', ';', '+', 'i', 'I', '%', 'H', '8', 'M', '#'}};
+	void print() {
+		unsigned pn = 0;
+		for(const auto& p : px_) {
+			cout << ch_[static_cast<double>(p)/maxit_ * pxmap::ch_.size()];	
+			if (++pn % width_ == 0) {
+				cout << endl;
+			}
+		}
+		cout << endl;
+	}
+};
+
+constexpr const array<char, 14> pxmap::ch_ = {{ ' ', '.', ',', ':', ';', '+', 'i', 'I', '%', 'H', '8', 'M', '#', '*'}};
 
 int main (int argc, char const *argv[])
 {
@@ -89,11 +110,12 @@ int main (int argc, char const *argv[])
 		cout << pow(ca,3) << endl;*/
 		window<double> w;//(-1.5,0,0.5,1);
 		unsigned maxit = 100;
-		unsigned rows = 120;
-		unsigned lines = rows * 1.0/1.8;
+		unsigned rows = 100;
+		unsigned lines = rows * 1.0/2.0;
+		double exp = 2.0;
 		for(unsigned it = 0; true; ++it) {
 			if (it > 0) {
-				cout << w << " " << maxit << " " << escval << " zoom In, zoom Out, Left, Right, Up, Down, +iterate, -iterate, +Esc, -esc, +Wide, -wide, Quit: ";
+				cout << w << " " << maxit << " esc:" << escval << " exp:" << exp << " zoom In, zoom Out, Left, Right, Up, Down, +iterate, -iterate, +Esc, -esc, +Wide, -wide, +Pow, -pow, Quit: ";
 				string cc;
 				getline(cin, cc);
 				char c;
@@ -145,34 +167,47 @@ int main (int argc, char const *argv[])
 						rows -= rows/4.0;
 						w.zoom(0.25, 0);
 						break;
+					case 'P':
+						exp += 0.1;
+						exp = min(10.0, exp);
+						break;
+					case 'p':
+						exp -= 0.1;
+						exp = max(0.1, exp);
+						break;
 				}
 			}
 			double stepx = w.width() / static_cast<double>(rows);
 			double stepy = w.height() / static_cast<double>(lines);
 			cout << stepx << ", " << stepy << endl;
 			//cout << endl;
-			for(double y = w.ymax_; y > w.ymin_; y -= stepy) {
-				for(double x = w.xmin_; x < w.xmax_; x += stepx) {
+			pxmap pm(maxit, rows, lines);
+			auto pmit = pm.px_.begin();
+			for(unsigned iy = 0; iy < lines; ++iy) {
+				double y = w.ymax_ - stepy * iy;
+			//for(double y = w.ymax_; y > w.ymin_; y -= stepy) {
+				for(unsigned ix = 0; ix < rows; ++ix) {
+					double x = w.xmin_ + stepx * ix;
+				//for(double x = w.xmin_; x < w.xmax_; x += stepx) {
 					unsigned i = 0;
-					bool isin = true;
-					cpt c(x,y);
-					cpt cc = c;
+					//bool isin = true;
+					cpt c(0,0);
+					cpt cc(x,y);
 					for(; i < maxit; ++i) {
-						c = c * c *c + cc;
+						//c = c * c + cc;
+						c = pow(c, exp) + cc;
 						if (c.real() * c.real() + c.imag() * c.imag() > escval) {
-							isin = false;
+							//isin = false;
 							break;
 						} 
 					}
-					if (isin) {
-						cout << '*';
-					} else {
-						size_t idx = static_cast<double>(i)/maxit * ch.size();
-						cout << ch[idx] ;
-					}
+					*pmit = i;
+					++pmit;
 				}
 				cout << endl;
 			}
+//			cout << "********************" << endl;
+			pm.print();
 		}
 	} catch(...) {
 		cerr << "Unknown exception" << endl;
