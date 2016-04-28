@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <complex>
 #include <boost/format.hpp>
+#include <future>
 #include <utility>
 
 using namespace std;
