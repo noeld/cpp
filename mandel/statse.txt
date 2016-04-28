@@ -1,0 +1,30 @@
+WinTime "python mandel,py 10"
+Kernel: 0,000000
+User:   0,343750
+WinTime "mandel 10"
+Kernel: 0,000000
+User:   0,062500
+WinTime "python mandel,py 100"
+Kernel: 0,015625
+User:   0,468750
+WinTime "mandel 100"
+Kernel: 0,000000
+User:   0,125000
+WinTime "python mandel,py 1000"
+Kernel: 0,031250
+User:   0,734375
+WinTime "mandel 1000"
+Kernel: 0,000000
+User:   0,265625
+WinTime "python mandel,py 10000"
+Kernel: 0,031250
+User:   3,109375
+WinTime "mandel 10000"
+Kernel: 0,000000
+User:   1,312500
+WinTime "python mandel,py 100000"
+Kernel: 0,015625
+User:   26,015625
+WinTime "mandel 100000"
+Kernel: 0,000000
+User:   12,265625
