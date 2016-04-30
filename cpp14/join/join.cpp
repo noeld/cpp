@@ -13,22 +13,9 @@
 #include <exception>
 #include <unordered_map>
 #include <boost/tokenizer.hpp>
-
-class Row
-{
-public:
-	explicit Row(const std::vector<std::string>& v) : values_(v) 
-	{}
-	~Row() 				= default;
-	Row(const Row&) 	= default;
-	Row(Row&& r) : values_(std::move(r.values_)) {}
-	Row& operator=(const Row&) = delete;
-
-	std::vector<std::string>::size_type size() const { return values_.size(); }
-	const std::string& operator[](std::vector<std::string>::size_type i) const { return values_[i]; }
-private:
-	const std::vector<std::string> values_;
-};
+#include <thread>
+#include <future>
+#include <chrono>
 
 class CompressedCol
 {
@@ -79,20 +66,22 @@ public:
 	//const Row& operator[](unsigned i) const { return rows_[i]; }
 	void readCSV() {
 		std::ifstream in(name_);
+		if (!in.is_open())
+			throw std::runtime_error(std::string("Cannot open ") + name_);
 		std::string buffer;
 		tokenizer tok(buffer);
-		std::cerr << "Reading " << name_;
+		std::cerr << "Reading " << name_ << std::endl;
 		unsigned lines = 0;
 		if (in.good())
 		{
 			std::getline(in, buffer);
 			tok.assign(buffer, els);
 			for(const auto& s : tok) {
-				std::cerr << s << std::endl;
+				//std::cerr << s << std::endl;
 				cc_.emplace_back();
 				schema_.push_back(s);
 			}
-			std::cerr << "Die Datei hat " << cc_.size() << " Spalten." << std::endl;
+			//std::cerr << "Die Datei hat " << cc_.size() << " Spalten." << std::endl;
 		}
 		while (in.good())
 		{
@@ -105,7 +94,7 @@ public:
 			//for(auto& s : cols) {
 			for(auto& c : cc_) {
 				if (b == tok.end()) {
-					std::string s("Zeile " + std::to_string(lines) + " hat zu wenig Spalten");
+					std::string s("Zeile " + std::to_string(lines) + " hat zu wenig Spalten in " + name_);
 					throw std::runtime_error(s);
 				} else {
 					c.push_back(*b);
@@ -113,12 +102,15 @@ public:
 				}
 			}
 			if (b != tok.end()) {
-				throw std::runtime_error(std::string("Zeile " + std::to_string(lines) + " hat zuviele Spalten."));
+				throw std::runtime_error(std::string("Zeile " + std::to_string(lines) + " hat zuviele Spalten in " + name_));
 			}
 		}
-		std::cerr << "OK (" << lines << " lines read)" << std::endl;	
+		//std::cerr << "OK (" << lines << " lines read)" << std::endl;
+		// using namespace std::literals;
+		// std::this_thread::sleep_for(5s);	
 	}
 	const std::vector<CompressedCol>& columns() { return cc_; }
+	const std::string name() const { return name_; }
 private:
 	std::string name_;
 	std::vector<std::string> schema_;
@@ -132,12 +124,22 @@ int main(int argc, char const *argv[])
 {
 	int ret = 0;
 	std::vector<std::string> params(argv + 1, argv + argc);
-	std::vector<Table> tables;
+	std::vector<std::unique_ptr<Table>> tables;
 	try {
-		for(const auto& f : params) {
-			tables.emplace_back(f);
+		std::vector<std::future<std::unique_ptr<Table>>> futures;
+		for(const auto& name : params) {
+			futures.emplace_back(async(std::launch::async, [name](){
+				return std::unique_ptr<Table>(new Table(name));
+			}));
+		}
+		for(auto& f : futures) {
+			tables.push_back(f.get());
+		}
+		//tables.emplace_back(f);
+		for(const auto& t : tables) {
 			unsigned i = 0;
-			for(const auto& v : tables.back().columns()) {
+			std::cerr << t->name() << std::endl;
+			for(const auto& v : t->columns()) {
 				++i;
 				std::cerr << std::to_string(i) << " hat " << v.rows_.size() << " Zeilen mit " << std::to_string(v.values_.size()) << " verschiedenen Werten zwischen ";
 				decltype(v.values_.begin()) smin, smax;
@@ -145,10 +147,10 @@ int main(int argc, char const *argv[])
 				std::cerr << *smin << " und " << *smax << std::endl;
 			}
 		}
-		
 	}
 	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
+		ret = 1;
 	}
 	return ret;
 }
