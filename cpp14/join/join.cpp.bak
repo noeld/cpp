@@ -69,11 +69,8 @@ public:
 	explicit Table(const std::string& name, char ce = '\\', char cs = ';', char cq = '"')
 		: name_{name}, els{ce, cs, cq} 
 	{
-		readCSV();
+
 	}
-	Table(Table&& t) 
-		: name_{std::move(t.name_)}, schema_{std::move(t.schema_)}, cc_{std::move(t.cc_)}, els{std::move(t.els)}
-	{}
 	~Table() = default;
 	unsigned size() const { return cc_[0].rows_.size(); }
 	//const Row& operator[](unsigned i) const { return rows_[i]; }
@@ -90,7 +87,6 @@ public:
 			for(const auto& s : tok) {
 				std::cerr << s << std::endl;
 				cc_.emplace_back();
-				schema_.push_back(s);
 			}
 			std::cerr << "Die Datei hat " << cc_.size() << " Spalten." << std::endl;
 		}
@@ -118,7 +114,6 @@ public:
 		}
 		std::cerr << "OK (" << lines << " lines read)" << std::endl;	
 	}
-	const std::vector<CompressedCol>& columns() { return cc_; }
 private:
 	std::string name_;
 	std::vector<std::string> schema_;
@@ -131,21 +126,57 @@ private:
 int main(int argc, char const *argv[])
 {
 	int ret = 0;
-	std::vector<std::string> params(argv + 1, argv + argc);
-	std::vector<Table> tables;
+	std::vector<std::string> params(argv, argv + argc);
+	std::vector<CompressedCol> cc;
+	using tokenizer = boost::tokenizer<boost::escaped_list_separator<char>>;
+	boost::escaped_list_separator<char> els('\\', ';', '"');
 	try {
-		for(const auto& f : params) {
-			tables.emplace_back(f);
-			unsigned i = 0;
-			for(const auto& v : tables.back().columns()) {
-				++i;
-				std::cerr << std::to_string(i) << " hat " << v.rows_.size() << " Zeilen mit " << std::to_string(v.values_.size()) << " verschiedenen Werten zwischen ";
-				decltype(v.values_.begin()) smin, smax;
-				std::tie(smin, smax) = std::minmax_element(v.values_.begin(), v.values_.end());
-				std::cerr << *smin << " und " << *smax << std::endl;
+		std::ifstream in(params[1]);
+		std::string buffer;
+		tokenizer tok(buffer);
+		std::cerr << "Reading " << params[1];
+		unsigned lines = 0;
+		if (in.good())
+		{
+			std::getline(in, buffer);
+			tok.assign(buffer, els);
+			for(const auto& s : tok) {
+				std::cerr << s << std::endl;
+				cc.emplace_back();
+			}
+			std::cerr << "Die Datei hat " << cc.size() << " Spalten." << std::endl;
+		}
+		while (in.good())
+		{
+			std::getline(in, buffer);
+			if (buffer.size() == 0)
+				continue;
+			++lines;
+			tok.assign(buffer);
+			auto b = tok.begin();
+			//for(auto& s : cols) {
+			for(auto& c : cc) {
+				if (b == tok.end()) {
+					std::string s("Zeile " + std::to_string(lines) + " hat zu wenig Spalten");
+					throw std::runtime_error(s);
+				} else {
+					c.push_back(*b);
+					++b;
+				}
+			}
+			if (b != tok.end()) {
+				throw std::runtime_error(std::string("Zeile " + std::to_string(lines) + " hat zuviele Spalten."));
 			}
 		}
-		
+		std::cerr << "OK (" << lines << " lines read)" << std::endl;
+		unsigned i = 0;
+		for(const auto& v : cc) {
+			++i;
+			std::cerr << std::to_string(i) << " hat " << v.rows_.size() << " Zeilen mit " << std::to_string(v.values_.size()) << " verschiedenen Werten zwischen ";
+			decltype(v.values_.begin()) smin, smax;
+			std::tie(smin, smax) = std::minmax_element(v.values_.begin(), v.values_.end());
+			std::cerr << *smin << " und " << *smax << std::endl;
+		}
 	}
 	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
