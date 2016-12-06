@@ -50,9 +50,9 @@ void _tmain(int argc, TCHAR *argv[])
 
 	GetProcessTimes(pi.hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
 	auto convertToSeconds = [](const FILETIME& time) -> double { return FToUInt(time) / 10000000.0; };
-	_tprintf(_T("Kernel: %3.6f\n"), convertToSeconds(kernelTime));
-	_tprintf(_T("User:   %3.6f\n"), convertToSeconds(userTime));
-	_tprintf(_T("Real:   %3.6f\n"), (FToUInt(exitTime)-FToUInt(creationTime)) / 10000000.0);
+	_tprintf(_T("Kernel: %6.3f\n"), convertToSeconds(kernelTime));
+	_tprintf(_T("User:   %6.3f\n"), convertToSeconds(userTime));
+	_tprintf(_T("Real:   %6.3f\n"), (FToUInt(exitTime)-FToUInt(creationTime)) / 10000000.0);
 
 	// Close process and thread handles. 
 	CloseHandle(pi.hProcess);

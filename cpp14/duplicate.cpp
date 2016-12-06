@@ -146,8 +146,8 @@ int main (int argc, char const *argv[])
 		obs.join();
 		std::cerr << boost::format{"%10d files added"} % files_added << std::endl;
 		std::cerr << boost::format{"%10d files skipped"} % files_skipped << std::endl;
-		std::cerr << boost::format{"%10d Megabytes size alltogether"} % (files_size/1024/1024) << std::endl;
 		std::cerr << boost::format{"%10d files hashed (%3.1f%%)"} % digested % (static_cast<float>(digested)/files_added*100.0f) << std::endl;
+		std::cerr << boost::format{"%10d Megabytes size alltogether"} % (files_size/1024/1024) << std::endl;
 		std::cerr << boost::format{"%10d Megabytes hashed (%3.1f%%)"} % (digested_bytes/1024/1024) % (static_cast<float>(digested_bytes)/files_size*100.0f) << std::endl;
 		std::cerr << boost::format{"%10d Megabytes save potential"} % (save_potential/1024/1024) << std::endl;
 /*		ThreadPool::ThreadPool tp(1);
