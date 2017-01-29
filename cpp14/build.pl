@@ -2,8 +2,10 @@
 
 while(<>) {
 	if (/^\/\/\#(.*)$/) {
+		local $|;
+		print $1,"\n";
 		print `$1`,"\n";
 		exit;
 	}
 }
-print "No Command found";
+die "No Command found";
