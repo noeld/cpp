@@ -12,7 +12,7 @@
 		#content {   }
 		#canvas { float: left; width: 900px; height: 600px; border:1px solid #119; }
 		#panel { float: right; width: 250px;  border:1px solid #666; }
-		.field { width: 100px; float: right;}
+		.field { width: 50px; float: right;}
 		.label { float: left; background-color: #99f; text-align: left; font-family: Source Code Pro; font-size: 8pt; width: 250px; }
 	</style>
 	<script type="text/javascript">
@@ -25,31 +25,38 @@
 		, intervall : 50
 		, G : 6.6740831e-11 * 100e8
 		, break : {
-			fbreak : 25
-			, border_part : 0.15
+			  fbreak : 2
+			, border_part : 0.05
 			, break_factor : 0.2
 		}
-		, elastic : {
-			join_dist : 1
+		, collision : {
+			  join_dist : 1
 			, k : 0.25
 		}
 		, grid : {
-			fillStyle : '#000'
+			  fillStyle : '#000'
 			, strokeStyle : '#322'
 			, gridWidth : 50
 		}
 		, planet : {
-			fillStyle : '#666'
+			  gradientHighlight : '#fff'
+			, gradientShadow : '#333'
+			, gradientInnerRadius : 4  
+			, gradientOuterRadius : 40
+			, gradientOffset : -10
 			, strokeStyle : '#99f'
-			, font : '8pt Source Code Pro Light'
+			, font : '8pt Source Code Pro'
 		}
 		, random : {
-			maxSpeed : 5
-			, border_part : 0.15
+			  maxSpeed : 5
+			, border_part : 0.05
 			, dist_pow : 40
-			, maxMass : 50000
-			, nmin : 20
+			, minMass : 50
+			, maxMass : 10000
+			, nmin : 150
 			, nmax : 150
+			, alpha : 0.1
+			, l_d : 9.0
 		}
 	};
 	function Vec(x, y) {
@@ -144,19 +151,24 @@
 			big.active = 1;
 			small.active = 0;
 		},
-		elastic : function(o) {
+		collision : function(o) {
 			// https://de.wikipedia.org/wiki/Stoß_%28Physik%29
-			if (this.speed.sub_copy(o.speed).magn() < properties.elastic.join_dist) {
+			var speed_delta = this.speed.sub_copy(o.speed);
+			var speed_delta_m = speed_delta.magn();
+			if (speed_delta.magn() < properties.collision.join_dist) {
 				this.joinWith(o);
 				return;
 			}
 			var d = this.pos.sub_copy(o.pos).normalize();
+			// prevent planets from getting captured inside others
+			if (d.scalarprod(speed_delta) > 0)
+				return;
 			var t = new Vec(d.y, -d.x);
 			var sp1 = t.mul_copy(t.scalarprod(this.speed));
 			var st1 = d.mul_copy(d.scalarprod(this.speed));
 			var sp2 = t.mul_copy(t.scalarprod(o.speed));
 			var st2 = d.mul_copy(d.scalarprod(o.speed));
-			var k = properties.elastic.k;
+			var k = properties.collision.k;
 			var m1v1m2v2 = st1.mul_copy(this.m).add(st2.mul_copy(o.m));
 			var v1 = m1v1m2v2.sub_copy(st1.sub_copy(st2).mul(o.m * k)).mul(1 / (this.m + o.m));
 			var v2 = m1v1m2v2.sub_copy(st2.sub_copy(st1).mul(this.m * k)).mul(1 / (this.m + o.m));
@@ -186,7 +198,6 @@
 			ctx.lineTo(width, y);
 		}
 		ctx.stroke();
-		ctx.fillStyle = properties.planet.fillStyle;
 		
 		var now = Date.now()
 		if ( properties.lastTime == 0) {
@@ -195,11 +206,12 @@
 		var t = now - properties.lastTime;
 		t /= 1000;
 		properties.lastTime = now;
-
+		var activeObjects = 0;
 		for(var i = 0; i < properties.objs.length; ++i) {
 			var o = properties.objs[i];
 			if (o.active == 0) 
 				continue;
+			++activeObjects;
 			for(var j = 0; j < properties.objs.length; ++j) {
 				if (i != j) {
 					var oo = properties.objs[j];	
@@ -207,11 +219,11 @@
 						continue;
 					var dir = oo.pos.sub_copy(o.pos);
 					var dist = dir.magn();
-					if (dist < (o.r + oo.r)) { 
+					if (dist <= (o.r + oo.r)) { 
 						//dist = 5 ; 
 						//o.joinWith(oo);
 						if (i < j)
-							o.elastic(oo);
+							o.collision(oo);
 					} else {
 						var a = oo.m / (dist * dist) * properties.G;
 						a *= t;
@@ -247,9 +259,12 @@
 		}
 		ctx.strokeStyle = properties.planet.strokeStyle;
 		ctx.font = properties.planet.font;
-		var grd = ctx.createRadialGradient(-10,-10,4, 0, 0, 30);
-		grd.addColorStop(1, '#666');
-		grd.addColorStop(0, '#fff');
+		ctx.strokeText(activeObjects + ' Objekte', 5, canvas.height - 5);
+		//ctx.strokeStyle = properties.planet.strokeStyle;
+		ctx.font = properties.planet.font;
+		var grd = ctx.createRadialGradient(properties.planet.gradientOffset, properties.planet.gradientOffset, properties.planet.gradientInnerRadius, 0, 0, properties.planet.gradientOuterRadius);
+		grd.addColorStop(1, properties.planet.gradientShadow);
+		grd.addColorStop(0, properties.planet.gradientHighlight);
 		ctx.fillStyle = grd;
 		for(var i = 0; i < properties.objs.length; ++i) {
 			var o = properties.objs[i];
@@ -277,21 +292,55 @@
 	  }
 	  return rand / 6;
 	}
+	function gamma_distribution(x) {
+		var res;
+		var reject = true;
+		if (properties.random.alpha >= 1) {
+			var b = properties.random.alpha - 1.3862943611198906188344642429163531;
+			var c = properties.random.alpha + properties.random.l_d;
+			var _1l = 1 / properties.random.l_d;
+			var k = 2.5040773967762740733732583523868748;
+			do {
+				var u = Math.random();
+				var v = Math.random();
+				var y = _1l * Math.log(v / (1 - v));
+				res = properties.random.alpha * Math.exp(y);
+				var z = u * v * v;
+				var r = b + c * y - res;
+				reject = r < 4.5 * z - k;
+				if (reject) {
+					reject = r < Math.log(z);
+				}
+			} while (reject);
+		} else {
+			var c = 1 / properties.random.alpha;
+			do {
+				var z = -Math.log(Math.random());
+				var e = -Math.log(Math.random());
+				res = Math.pow(z, c);
+				reject = z + e < properties.random.l_d + res;
+
+			} while(reject);
+		}
+		return res;
+	}
 	var intf = null;
-	function randomObj(canvas, maxMass, maxSpeed, ff, dist_pow) {
+	function randomObj(canvas, minMass, maxMass, maxSpeed, ff, dist_pow) {
 		var speed = new Vec(Math.random()*2-1, Math.random()*2-1);
 		speed.normalize().mul(maxSpeed);
 		var minX = canvas.width * ff;
 		var minY = canvas.height * ff;
 		var ww = canvas.width - 2 * minY;
 		var hh = canvas.height - 2 * minX;
-		return new Obj(1 + Math.pow(dist_pow, Math.E*(Math.random()-1)) * maxMass
+		//var m = 1 + Math.pow(dist_pow, Math.E*(Math.random()-1)) * maxMass;
+		var m = minMass + gamma_distribution() * (maxMass - minMass);
+		return new Obj(m
 			, new Vec(minX + Math.random() * ww
 				, minY + Math.random() * hh)
 			, speed
 					)
 	}
-	function test() {
+	function run() {
 		//properties.ctx = null;
 		if (properties.ctx === null)
 			createPanel();
@@ -303,7 +352,7 @@
 		var n = properties.random.nmin + parseInt(Math.random() * (properties.random.nmax - properties.random.nmin));
 		properties.objs.length = 0;
 		for(var i = 0; i < n; ++i) {
-			properties.objs.push(randomObj(canvas, properties.random.maxMass, properties.random.maxSpeed, properties.random.border_part, properties.random.dist_pow));
+			properties.objs.push(randomObj(canvas, properties.random.minMass, properties.random.maxMass, properties.random.maxSpeed, properties.random.border_part, properties.random.dist_pow));
 		}
 		intf = function() {drawGrid(properties);};
 		properties.handle = window.setInterval(intf, properties.intervall);
@@ -372,12 +421,12 @@
 	}
 	</script>
 </head>
-<body onload="javascript:test()">
+<body onload="javascript:run()">
 <span id="content"><canvas id="canvas"></canvas></span>
 <span id="panel">
 	<button onclick="javascript:stopAnimation()">Stop</button>
 	<button onclick="javascript:startAnimation()">Continue</button>
-	<button onclick="javascript:stopAnimation(); test()">Restart</button>
+	<button onclick="javascript:stopAnimation(); run()">Restart</button>
 </span>
 </body>
 </html>
