@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Simulation</title>
+	<style type="text/css">
+		body { 
+			/*background-image: url("http://upload.wikimedia.org/wikipedia/commons/0/08/Sculptor_Galaxy_by_VISTA.jpg"); */
+			background-color: #333;
+		}
+		body,html { height: 100%;}
+		#content {   }
+		#canvas { float: left; width: 900px; height: 600px; border:1px solid #119; }
+		#panel { float: right; width: 250px;  border:1px solid #666; }
+		.field { width: 100px; float: right;}
+		.label { float: left; background-color: #99f; text-align: left; font-family: Source Code Pro; font-size: 8pt; width: 250px; }
+	</style>
+	<script type="text/javascript">
+	var canvas;
+	var off = 0;
+	var properties = {
+		  ctx : null
+		, objs : []
+		, lastTime : 0
+		, intervall : 50
+		, G : 6.6740831e-11 * 100e8
+		, break : {
+			fbreak : 25
+			, border_part : 0.15
+			, break_factor : 0.2
+		}
+		, elastic : {
+			join_dist : 1
+			, k : 0.25
+		}
+		, grid : {
+			fillStyle : '#000'
+			, strokeStyle : '#322'
+			, gridWidth : 50
+		}
+		, planet : {
+			fillStyle : '#666'
+			, strokeStyle : '#99f'
+			, font : '8pt Source Code Pro Light'
+		}
+		, random : {
+			maxSpeed : 5
+			, border_part : 0.15
+			, dist_pow : 40
+			, maxMass : 50000
+			, nmin : 20
+			, nmax : 150
+		}
+	};
+	function Vec(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+	Vec.prototype = {
+		add : function(v) {
+			this.x += v.x;
+			this.y += v.y;
+			return this;
+		},
+		add_copy : function (v) {
+			return new Vec(this.x + v.x, this.y + v.y);
+		},
+		mul : function (f) {
+			this.x *= f;
+			this.y *= f;
+			return this;
+		},
+		mul_copy : function (f) {
+			return new Vec(this.x * f, this.y * f);
+		},
+		scalarprod : function (f) {
+			return this.x * f.x + this.y * f.y;
+		},
+		magn : function () {
+			return Math.sqrt(this.x * this.x + this.y * this.y);
+		},
+		normalize : function () {
+			var m = this.magn();
+			this.mul( 1 / m );
+			return this;
+		},
+		normalize_copy : function () {
+			return this.mul_copy( 1 / this.magn() );
+		},
+		sub : function (v) {
+			this.x -= v.x;
+			this.y -= v.y;
+			return this;
+		},
+		sub_copy : function(v) {
+			return new Vec(this.x - v.x, this.y - v.y);
+		},
+		dist : function(v) {
+			return this.sub_copy(v).magn();
+		},
+		set : function(v) {
+			this.x = v.x;
+			this.y = v.y;
+			return this;
+		},
+	};
+	var objs = [];
+	function Obj(m, pos, speed) {
+		this.m = m;
+		this.r = this.radiusFromMass(m);
+		this.pos = pos;
+		this.speed = speed;
+		this.active = 1;
+	}
+	Obj.prototype = {
+		copy : function () {
+			return new Obj(this.m, this.pos.mul_copy(1), this.speed.mul_copy(1));
+		},
+		advance : function(t) {
+			this.pos.add(this.speed.mul_copy(t));
+			return this;
+		},
+		radiusFromMass : function(m) {
+			return Math.pow(m/Math.PI, 1/3);
+		},
+		joinWith : function(o) {
+			var big = this;
+			var small = o;
+			if (small.m > this.m) {
+				big = o;
+				small = this;
+			}
+			var mm = big.m + small.m;
+			var rr = this.radiusFromMass(mm);
+			var d = big.pos.sub_copy(small.pos);
+			var dmagn = d.magn();
+			var f = small.m / mm;
+			var pp = big.pos.add_copy(d.normalize().mul(f));
+			var ss = big.speed.mul_copy(big.m / mm).add(small.speed.mul_copy(small.m / mm));
+			big.m = mm;
+			big.r = rr;
+			big.pos = pp;
+			big.speed = ss;
+			big.active = 1;
+			small.active = 0;
+		},
+		elastic : function(o) {
+			// https://de.wikipedia.org/wiki/Stoß_%28Physik%29
+			if (this.speed.sub_copy(o.speed).magn() < properties.elastic.join_dist) {
+				this.joinWith(o);
+				return;
+			}
+			var d = this.pos.sub_copy(o.pos).normalize();
+			var t = new Vec(d.y, -d.x);
+			var sp1 = t.mul_copy(t.scalarprod(this.speed));
+			var st1 = d.mul_copy(d.scalarprod(this.speed));
+			var sp2 = t.mul_copy(t.scalarprod(o.speed));
+			var st2 = d.mul_copy(d.scalarprod(o.speed));
+			var k = properties.elastic.k;
+			var m1v1m2v2 = st1.mul_copy(this.m).add(st2.mul_copy(o.m));
+			var v1 = m1v1m2v2.sub_copy(st1.sub_copy(st2).mul(o.m * k)).mul(1 / (this.m + o.m));
+			var v2 = m1v1m2v2.sub_copy(st2.sub_copy(st1).mul(this.m * k)).mul(1 / (this.m + o.m));
+			this.speed.set(v1.add(sp1));
+			o.speed.set(v2.add(sp2));
+		},
+	};
+	
+	//https://de.wikipedia.org/wiki/Gravitation
+	
+	function drawGrid(properties) {
+		var ctx = properties.ctx;
+		var canvas = ctx.canvas;
+		ctx.fillStyle = properties.grid.fillStyle;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		ctx.strokeStyle = properties.grid.strokeStyle;
+		ctx.beginPath();
+		var gridWidth = properties.grid.gridWidth;
+		var width = canvas.width;
+		var height = canvas.height;
+		for(var x = off; x < width; x += gridWidth ) {
+			ctx.moveTo(x, 0);
+			ctx.lineTo(x, height);
+		}
+		for(var y = off; y < height; y += gridWidth ) {
+			ctx.moveTo(0, y);
+			ctx.lineTo(width, y);
+		}
+		ctx.stroke();
+		ctx.fillStyle = properties.planet.fillStyle;
+		
+		var now = Date.now()
+		if ( properties.lastTime == 0) {
+			properties.lastTime = now;
+		}
+		var t = now - properties.lastTime;
+		t /= 1000;
+		properties.lastTime = now;
+
+		for(var i = 0; i < properties.objs.length; ++i) {
+			var o = properties.objs[i];
+			if (o.active == 0) 
+				continue;
+			for(var j = 0; j < properties.objs.length; ++j) {
+				if (i != j) {
+					var oo = properties.objs[j];	
+					if (oo.active == 0) 
+						continue;
+					var dir = oo.pos.sub_copy(o.pos);
+					var dist = dir.magn();
+					if (dist < (o.r + oo.r)) { 
+						//dist = 5 ; 
+						//o.joinWith(oo);
+						if (i < j)
+							o.elastic(oo);
+					} else {
+						var a = oo.m / (dist * dist) * properties.G;
+						a *= t;
+						//if (a > 10) { a = 10;}
+						dir.normalize().mul(a);
+						o.speed.add(dir);
+					}
+				}
+			}
+			var outer = 0;
+			if (o.pos.x < width * properties.break.border_part) {
+				o.speed.x += properties.break.fbreak * t;
+				outer = 1;
+			}
+			if (o.pos.x > width - width * properties.break.border_part) {
+				o.speed.x -= properties.break.fbreak * t;
+				outer = 1;
+			}
+			if (o.pos.y < height * properties.break.border_part) {
+				o.speed.y += properties.break.fbreak * t;
+				outer = 1;
+			}
+			if (o.pos.y > height - height * properties.break.border_part) {
+				o.speed.y -= properties.break.fbreak * t;
+				outer = 1;
+			}
+			if (outer == 1 && o.speed.magn() > properties.break.fbreak ) {
+				var s = o.speed.magn();
+				var sm = s * properties.break.break_factor * t;
+				s -= sm;
+				o.speed.normalize().mul(s);
+			}
+		}
+		ctx.strokeStyle = properties.planet.strokeStyle;
+		ctx.font = properties.planet.font;
+		var grd = ctx.createRadialGradient(-10,-10,4, 0, 0, 30);
+		grd.addColorStop(1, '#666');
+		grd.addColorStop(0, '#fff');
+		ctx.fillStyle = grd;
+		for(var i = 0; i < properties.objs.length; ++i) {
+			var o = properties.objs[i];
+			if (o.active == 0)
+				continue;
+			o.advance(t);
+			ctx.save()
+			ctx.translate(o.pos.x, o.pos.y);
+			ctx.beginPath();
+			ctx.arc(0, 0, o.r, 0, 2 * Math.PI);
+			ctx.fill();
+			//ctx.strokeText(i.toString(), o.pos.x + o.r + 3, o.pos.y);
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(o.speed.x, o.speed.y);
+			ctx.stroke();
+			ctx.restore();
+		}
+		
+	}
+	function gaussianRand() {
+	  var rand = 0;
+	  for (var i = 0; i < 6; i += 1) {
+	    rand += Math.random();
+	  }
+	  return rand / 6;
+	}
+	var intf = null;
+	function randomObj(canvas, maxMass, maxSpeed, ff, dist_pow) {
+		var speed = new Vec(Math.random()*2-1, Math.random()*2-1);
+		speed.normalize().mul(maxSpeed);
+		var minX = canvas.width * ff;
+		var minY = canvas.height * ff;
+		var ww = canvas.width - 2 * minY;
+		var hh = canvas.height - 2 * minX;
+		return new Obj(1 + Math.pow(dist_pow, Math.E*(Math.random()-1)) * maxMass
+			, new Vec(minX + Math.random() * ww
+				, minY + Math.random() * hh)
+			, speed
+					)
+	}
+	function test() {
+		//properties.ctx = null;
+		if (properties.ctx === null)
+			createPanel();
+		//document.getElementById('content').appendChild(document.createTextNode('Hallo'));
+		canvas = document.getElementById('canvas');
+		canvas.width = canvas.offsetWidth;
+		canvas.height = canvas.offsetHeight;
+		properties.ctx = canvas.getContext('2d');
+		var n = properties.random.nmin + parseInt(Math.random() * (properties.random.nmax - properties.random.nmin));
+		properties.objs.length = 0;
+		for(var i = 0; i < n; ++i) {
+			properties.objs.push(randomObj(canvas, properties.random.maxMass, properties.random.maxSpeed, properties.random.border_part, properties.random.dist_pow));
+		}
+		intf = function() {drawGrid(properties);};
+		properties.handle = window.setInterval(intf, properties.intervall);
+	}
+	function stopAnimation() {
+		if (properties.handle !== null) 
+			window.clearInterval(properties.handle);
+		properties.handle = null;
+		properties.lastTime = 0;
+	}
+	function startAnimation() {
+		if (properties.handle === null)
+			properties.handle = window.setInterval(intf, properties.intervall);
+	}
+	function setPropertyValue(text) {
+		var e = document.getElementById(text);
+		if (typeof(e) == 'object') {
+			var txt = e.parentElement.textContent;
+			var parts = txt.split('.');
+			var p = properties;
+			var key = parts[0];
+			for(var i = 0; i < parts.length - 1; ++i) {
+				if (key in p) 
+					p = p[key];
+				else 
+					window.alert("Key is unknown: " + key + " - " + i);
+				key = parts[ i+1 ];
+			}
+			if (key in p) {
+				if (typeof(p[key]) == 'number')
+					p[key] = parseFloat(e.value); // AsNumber;
+				else
+					p[key] = e.value;
+			} else {
+				//window.alert("Key is unknown: " + key + " - " + typeof(p));
+			}
+		}
+	}
+	function createPanel() {
+		var p = document.getElementById('panel');
+		var root = properties;
+		var func = function(properties, prefix) {
+			for(var x in properties) {
+				
+				if (typeof(properties[x]) == 'object') {
+					func(properties[x], x + '.');
+				} else {
+					var s = document.createElement('span');
+					var l = document.createElement('label');
+					l.appendChild(document.createTextNode(prefix + x));
+					l.setAttribute('class', 'label');
+					var i = document.createElement('input');
+					i.setAttribute('class', 'field');
+					i.setAttribute('type', 'text');
+					var id = 'PROP_' + prefix + x;
+					i.setAttribute('id', id);
+					i.setAttribute('oninput', 'javascript:setPropertyValue("' + id + '");');
+					i.setAttribute('value', properties[x]);
+					l.appendChild(i);
+					s.appendChild(l);
+					p.appendChild(s);
+				}
+			}	
+		};
+		func(root, '');
+	}
+	</script>
+</head>
+<body onload="javascript:test()">
+<span id="content"><canvas id="canvas"></canvas></span>
+<span id="panel">
+	<button onclick="javascript:stopAnimation()">Stop</button>
+	<button onclick="javascript:startAnimation()">Continue</button>
+	<button onclick="javascript:stopAnimation(); test()">Restart</button>
+</span>
+</body>
+</html>
