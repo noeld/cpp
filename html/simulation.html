@@ -9,11 +9,19 @@
 			background-color: #333;
 		}
 		body,html { height: 100%;}
-		#content {   }
-		#canvas { float: left; width: 900px; height: 600px; border:1px solid #119; }
-		#panel { float: right; width: 250px;  border:1px solid #666; }
+		#content { float: left; width: 100%; height: 100%; margin-right: -280px; }
+		#innercontent {margin-right: 280px;}
+		#canvas { border:1px solid #119; width: 900px; height:600px; }
+		#panel { 
+			float: left; 
+			width: 250px; 
+			border:1px solid #666; 
+			font-family: Source Code Pro; 
+			font-size: 8pt;
+			vertical-align: middle;
+		}
 		.field { width: 50px; float: right;}
-		.label { float: left; background-color: #99f; text-align: left; font-family: Source Code Pro; font-size: 8pt; width: 250px; }
+		.label { float: left; background-color: #99f; text-align: left;  width: 250px; }
 	</style>
 	<script type="text/javascript">
 	var canvas;
@@ -50,7 +58,7 @@
 		, random : {
 			  maxSpeed : 5
 			, border_part : 0.05
-			, dist_pow : 40
+			//, dist_pow : 40
 			, minMass : 50
 			, maxMass : 10000
 			, nmin : 150
@@ -142,7 +150,7 @@
 			var d = big.pos.sub_copy(small.pos);
 			var dmagn = d.magn();
 			var f = small.m / mm;
-			var pp = big.pos.add_copy(d.normalize().mul(f));
+			var pp = big.pos.add_copy(d.mul(-f));
 			var ss = big.speed.mul_copy(big.m / mm).add(small.speed.mul_copy(small.m / mm));
 			big.m = mm;
 			big.r = rr;
@@ -154,7 +162,6 @@
 		collision : function(o) {
 			// https://de.wikipedia.org/wiki/Stoß_%28Physik%29
 			var speed_delta = this.speed.sub_copy(o.speed);
-			var speed_delta_m = speed_delta.magn();
 			if (speed_delta.magn() < properties.collision.join_dist) {
 				this.joinWith(o);
 				return;
@@ -325,13 +332,13 @@
 		return res;
 	}
 	var intf = null;
-	function randomObj(canvas, minMass, maxMass, maxSpeed, ff, dist_pow) {
+	function randomObj(canvas, minMass, maxMass, maxSpeed, ff) {
 		var speed = new Vec(Math.random()*2-1, Math.random()*2-1);
 		speed.normalize().mul(maxSpeed);
-		var minX = canvas.width * ff;
-		var minY = canvas.height * ff;
-		var ww = canvas.width - 2 * minY;
-		var hh = canvas.height - 2 * minX;
+		var minX = canvas.width * ff/2;
+		var minY = canvas.height * ff/2;
+		var ww = canvas.width * (1-ff);
+		var hh = canvas.height * (1-ff);
 		//var m = 1 + Math.pow(dist_pow, Math.E*(Math.random()-1)) * maxMass;
 		var m = minMass + gamma_distribution() * (maxMass - minMass);
 		return new Obj(m
@@ -352,7 +359,7 @@
 		var n = properties.random.nmin + parseInt(Math.random() * (properties.random.nmax - properties.random.nmin));
 		properties.objs.length = 0;
 		for(var i = 0; i < n; ++i) {
-			properties.objs.push(randomObj(canvas, properties.random.minMass, properties.random.maxMass, properties.random.maxSpeed, properties.random.border_part, properties.random.dist_pow));
+			properties.objs.push(randomObj(canvas, properties.random.minMass, properties.random.maxMass, properties.random.maxSpeed, properties.random.border_part));
 		}
 		intf = function() {drawGrid(properties);};
 		properties.handle = window.setInterval(intf, properties.intervall);
@@ -400,7 +407,7 @@
 				if (typeof(properties[x]) == 'object') {
 					func(properties[x], x + '.');
 				} else {
-					var s = document.createElement('span');
+					var s = document.createElement('div');
 					var l = document.createElement('label');
 					l.appendChild(document.createTextNode(prefix + x));
 					l.setAttribute('class', 'label');
@@ -422,11 +429,13 @@
 	</script>
 </head>
 <body onload="javascript:run()">
-<span id="content"><canvas id="canvas"></canvas></span>
-<span id="panel">
+<div id="content">
+	<div id="innercontent"><canvas id="canvas"></canvas></div>
+</div>
+<div id="panel">
 	<button onclick="javascript:stopAnimation()">Stop</button>
 	<button onclick="javascript:startAnimation()">Continue</button>
 	<button onclick="javascript:stopAnimation(); run()">Restart</button>
-</span>
+</div>
 </body>
 </html>

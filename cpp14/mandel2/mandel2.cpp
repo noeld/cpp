@@ -182,19 +182,20 @@ int main(int argc, char const *argv[])
 	typedef boost::gil::image_view<locator_t> my_virt_view_t;
 	FrAdapter::point_t res(1000,1000);
 
-	for(double d = 1.0; d < 4.0; d += 0.025) {
+	for(double d = 2.0; d < 2.1; d += 0.025) {
 		for(double p = 0.5; p < 0.6; p += 0.1) {
 			std::ostringstream oss;
-			oss << boost::format{"o_%3.2f_%2.1f.png"} % d % p;
+			oss << boost::format{"p_%3.2f_%2.1f.png"} % d % p;
 			std::string filename = oss.str();
 			std::cout << filename << std::endl; 
 			FrAdapter fra(res, d);
-			fra.fr().set_window(std::make_tuple(-2.0, -1.5, 1.0, 1.5));
+			//fra.fr().set_window(std::make_tuple(-2.0, -1.5, 1.0, 1.5));
+			fra.fr().set_window(std::make_tuple(-0.0, -0.9, 0.4, -0.4));
 			fra.fr().fit_range_to_res(1.0);
 			fra.set_pow(p);
 			my_virt_view_t mandel(res, locator_t(FrAdapter::point_t(0, 0), FrAdapter::point_t(1, 1), fra));
 
-			boost::gil::gray8s_image_t img(res);
+			//boost::gil::gray8s_image_t img(res);
 			boost::gil::png_write_view(filename, mandel);
 	
 		}

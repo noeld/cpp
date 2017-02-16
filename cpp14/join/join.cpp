@@ -16,6 +16,7 @@
 #include <thread>
 #include <future>
 #include <chrono>
+#include <algorithm>
 
 class CompressedCol
 {
@@ -49,6 +50,8 @@ public:
 	// original value from row i = values_[rows_[i]]
 	std::vector<unsigned> rows_;
 };
+
+class Index;
 
 class Table
 {
@@ -110,7 +113,15 @@ public:
 		// std::this_thread::sleep_for(5s);	
 	}
 	const std::vector<CompressedCol>& columns() { return cc_; }
-	const std::string name() const { return name_; }
+	const CompressedCol& column(const std::string& n) const {
+		auto search = std::find(schema_.begin(), schema_.end(), n);
+		if (search == schema_.end()) {
+			throw std::runtime_error("Spalte " + n + " existiert nicht in " + name());
+		}
+		auto index = search - schema_.begin();
+		return cc_[index];
+	}
+	const std::string& name() const { return name_; }
 private:
 	std::string name_;
 	std::vector<std::string> schema_;
@@ -118,6 +129,38 @@ private:
 	std::vector<CompressedCol> cc_;
 	using tokenizer = boost::tokenizer<boost::escaped_list_separator<char>>;
 	boost::escaped_list_separator<char> els{'\\', ';', '"'};
+};
+
+class Index
+{
+public:
+	explicit Index(Table& table, std::vector<std::string>&& colnames, bool unique = false) : table_{table}, colnames_{colnames}, unique_{unique}
+	{
+		for(unsigned i = 0; i < colnames_.size(); ++i) {
+			if (i > 0) 
+				flatname_.append("-");
+			flatname_.append(colnames_[i]);
+		}
+		buildIndex();
+	}
+	~Index() = default;
+	const std::string& flatname() const { return flatname_; }
+	void buildIndex() {
+		std::vector<CompressedCol*> cols;
+		for(const auto& n : colnames_) {
+			auto col = table_.column(n);
+			cols.push_back(&col);
+			// TODO finish
+			// 
+
+		}
+	}
+private:
+	Table& table_;
+	std::vector<std::string> colnames_;
+	std::string flatname_;
+
+	bool unique_;
 };
 
 int main(int argc, char const *argv[])
