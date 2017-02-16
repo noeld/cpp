@@ -69,7 +69,7 @@ public:
     Vector& operator-=(const Vector& v) { this->x_ -= v.x_; this->y_ -= v.y_; return *this; }
     Vector operator*(const double& f) const { return Vector(this->x_ * f, this->y_ * f); }
     Vector& operator*=(const double& f) { this->x_ *= f; this->y_ *= f; return *this; }
-    double operator*(const Vector& v) const { return this->x_ * v.x_ + this->y_ + v.y_; }
+    double operator*(const Vector& v) const { return this->x_ * v.x_ + this->y_ * v.y_; }
     double magn() const { return std::sqrt( x_ * x_ + y_ * y_ ); }
     Vector& normalize() { *this *= 1/magn(); return *this; }
     Vector normalize_copy() { auto f = magn(); return Vector(x_ * f, y_ * f); }

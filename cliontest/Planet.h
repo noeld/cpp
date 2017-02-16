@@ -51,7 +51,7 @@ public:
     static double RadiusFromMass(const double& m);
 
     static void Join(Planet &a, Planet &b);
-    static void Collide(Planet& a, Planet& b, const double& k = 0.05, const double& d = 1.0);
+    static void Collide(Planet& a, Planet& b, const double& k = 0.75, const double& d = 0.2);
 
     const Vector &getPos() const {
         return pos_;

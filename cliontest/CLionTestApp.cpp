@@ -8,6 +8,6 @@
 bool CLionTestApp::OnInit() {
     CLionTestFrame* frame = new CLionTestFrame();
     frame->Show(true);
-    frame->SetSize(600, 400);
+    frame->SetSize(1000, 700);
     return true; //wxAppConsoleBase::OnInit();
 }

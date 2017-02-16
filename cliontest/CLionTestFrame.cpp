@@ -7,6 +7,7 @@
 CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) {
     CreateStatusBar();
     SetStatusText("Hallo");
+    SetSize(900, 600);
     Bind(wxEVT_PAINT, &CLionTestFrame::OnPaint, this, wxID_ANY);
     Bind(wxEVT_TIMER, &CLionTestFrame::OnTimer, this, wxID_ANY);
     tim_.Start(50);
