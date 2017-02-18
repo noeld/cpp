@@ -43,3 +43,12 @@ Universe::Universe(size_t n) : nr_ {n} {
         gen.Generate(p);
     }
 }
+
+void Universe::ReadProperties(const Properties &properties) {
+    nr_ = properties.generate_n;
+    properties.
+}
+
+void Universe::WriteProperties(Properties &properties) {
+
+}
