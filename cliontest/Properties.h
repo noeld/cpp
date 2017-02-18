@@ -39,6 +39,7 @@ class PropertiesReaderWriter {
 public:
     virtual void ReadProperties(const Properties&) =0;
     virtual void WriteProperties(Properties&) =0;
+
 };
 
 
