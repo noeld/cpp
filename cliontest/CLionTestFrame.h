@@ -16,8 +16,9 @@ public:
 private:
     wxBitmap bmp_;
     wxTimer tim_;
+    unsigned c_ { 0 };
     void OnPaint(wxPaintEvent &event);
-    Universe universe{1000};
+    Universe universe{500};
 
     void OnTimer(wxTimerEvent &);
 };

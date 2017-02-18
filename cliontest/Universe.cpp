@@ -18,7 +18,7 @@ void Universe::advance(double t) {
             auto dist = dir.magn();
             if (dist <= (pp.getR() + p.getR())) {
                 if (&p < &pp)
-                    Planet::Collide(p, pp);
+                    nr_ -= Planet::Collide(p, pp);
             } else {
                 double a = pp.getMass() / ( dist * dist ) * (6.6740831e-11 * 100e8);
                 a *= t;
@@ -36,9 +36,9 @@ Universe::~Universe() {
 
 }
 
-Universe::Universe(size_t n) {
+Universe::Universe(size_t n) : nr_ {n} {
     objects_.resize(n);
-    PlanetGenerator gen(DoubleRange(0, 0, 900, 600), 0.1, 9.0, 50, 1000);
+    PlanetGenerator gen(DoubleRange(0, 0, 900, 600), 0.5, 4.0, 10000, 20000);
     for(auto& p : objects_) {
         gen.Generate(p);
     }

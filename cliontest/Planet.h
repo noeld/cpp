@@ -49,11 +49,11 @@ public:
     }
 
     static double RadiusFromMass(const double& m);
-
+    static unsigned BlendWeightedRGB(unsigned, double, unsigned, double);
     static void Join(Planet &a, Planet &b);
-    static void Collide(Planet& a, Planet& b, const double& k = 0.75, const double& d = 0.2);
-
+    static unsigned Collide(Planet& a, Planet& b, const double& k = 0.05, const double& d = 2.2);
     const Vector &getPos() const {
+
         return pos_;
     }
 
@@ -98,11 +98,21 @@ public:
         Planet::active = active;
     }
 
+    unsigned int getRgb_() const {
+        return rgb_;
+    }
+
+    void setRgb_(unsigned int rgb_) {
+        Planet::rgb_ = rgb_;
+    }
 private:
     Vector pos_;
     Vector speed_;
     double mass_ {1.0};
     double r_;
+    unsigned rgb_{0};
+
+private:
     bool active {true};
 };
 

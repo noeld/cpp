@@ -23,9 +23,12 @@ public:
         return objects_;
     }
     void advance(double t);
+
+    size_t getNr_() const { return nr_; }
 private:
     std::vector<Planet> objects_;
     time_point last_time_;
+    size_t nr_;
 };
 
 

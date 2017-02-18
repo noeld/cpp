@@ -12,7 +12,7 @@
 
 class PlanetGenerator {
 public:
-    explicit PlanetGenerator(const DoubleRange& posRange, double alpha=0.1, double beta=9.0, double minMass=1, double maxMass=100);
+    explicit PlanetGenerator(const DoubleRange& posRange, double alpha=2.1, double beta=2.0, double minMass=1, double maxMass=100);
 
     virtual ~PlanetGenerator();
     PlanetGenerator(const PlanetGenerator&) = delete;
@@ -26,6 +26,7 @@ private:
     std::gamma_distribution<double> massDistribution_;
     std::uniform_int_distribution<int> posXDistribution_;
     std::uniform_int_distribution<int> posYDistribution_;
+    std::uniform_int_distribution<int> rgbDistribution_;
 };
 
 

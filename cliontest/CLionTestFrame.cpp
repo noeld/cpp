@@ -15,16 +15,21 @@ CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) 
 
 void CLionTestFrame::OnPaint(wxPaintEvent &event) {
     wxPaintDC dc(this);
-    auto s = GetClientSize();
-    dc.DrawText("Hallo", s.GetWidth()/2, s.GetHeight()/2);
+    //auto s = GetClientSize();
+    //dc.DrawText("Hallo", s.GetWidth()/2, s.GetHeight()/2);
     for (auto& o : universe.getObjects()) {
         if (!o.isActive())
             continue;
+        dc.SetBrush(wxBrush(wxColour(o.getRgb_())));
         dc.DrawCircle(o.getPos().getX(), o.getPos().getY(), o.getR());
     }
 }
 
 void CLionTestFrame::OnTimer(wxTimerEvent &event) {
-    universe.advance(50.0/1000.0);
+    universe.advance(25.0/1000.0);
+    ++c_;
     Refresh();
+    if  (c_ % 25 == 0)
+        SetStatusText(std::to_string(universe.getNr_()));
+
 }
