@@ -9,18 +9,34 @@
 #include <wx/wx.h>
 #include "Universe.h"
 
-class CLionTestFrame : public wxFrame {
+class CLionTestFrame : public wxFrame, PropertiesReaderWriter {
 public:
     CLionTestFrame();
+
+    virtual ~CLionTestFrame();
+
+private:
+    void OnPaint(wxPaintEvent &event);
+    void OnTimer(wxTimerEvent &);
+
+    void ReadProperties(const Properties &properties) override;
+
+    void WriteProperties(Properties &properties) override;
+
+    void Start();
+    void Stop();
+    void Restart();
 
 private:
     wxBitmap bmp_;
     wxTimer tim_;
     unsigned c_ { 0 };
-    void OnPaint(wxPaintEvent &event);
+
+    Properties prop_;
     Universe universe{500};
 
-    void OnTimer(wxTimerEvent &);
+    unsigned simulation_intervall { 50 };
+    double   simulation_f { 1.0 };
 };
 
 

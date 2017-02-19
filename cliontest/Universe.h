@@ -17,7 +17,7 @@ public:
 
     virtual ~Universe();
 
-    using time_point = std::chrono::high_resolution_clock::time_point;
+    //using time_point = std::chrono::high_resolution_clock::time_point;
     //using now = std::chrono::high_resolution_clock::now;
 
     const std::vector<Planet> &getObjects() const {
@@ -30,15 +30,23 @@ public:
 
     void WriteProperties(Properties &properties) override;
 
+    void Initialize();
+
 private:
     std::vector<Planet> objects_;
-    time_point last_time_;
-    size_t nr_;
 
-    double generate_mass_min;
-    double generate_mass_max;
-    double generate_mass_alpha;
-    double generate_mass_beta;
+    size_t nr_;
+    double   universe_g { 6.6740831e-11 * 100e8 };
+    double   universe_collision_joindist { 0.2 };
+    double   universe_collision_k { 0.5 };
+    unsigned generate_n { 1000 };
+    double   generate_speed_max { 5 };
+    double   generate_border_part { 0.05 };
+    double   generate_mass_min { 50 };
+    double   generate_mass_max { 10000 };
+    double   generate_mass_alpha { 0.1 };
+
+    double   generate_mass_beta  { 9.0 };
 };
 
 

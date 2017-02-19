@@ -18,9 +18,9 @@ void Universe::advance(double t) {
             auto dist = dir.magn();
             if (dist <= (pp.getR() + p.getR())) {
                 if (&p < &pp)
-                    nr_ -= Planet::Collide(p, pp);
+                    nr_ -= Planet::Collide(p, pp, this->universe_collision_k, this->universe_collision_joindist);
             } else {
-                double a = pp.getMass() / ( dist * dist ) * (6.6740831e-11 * 100e8);
+                double a = pp.getMass() / ( dist * dist ) * this->universe_g;
                 a *= t;
                 dir.normalize() *= a;
                 p.Speed() += dir;
@@ -37,18 +37,43 @@ Universe::~Universe() {
 }
 
 Universe::Universe(size_t n) : nr_ {n} {
-    objects_.resize(n);
-    PlanetGenerator gen(DoubleRange(0, 0, 900, 600), 0.5, 4.0, 10000, 20000);
+
+}
+
+void Universe::Initialize() {
+    objects_.resize(generate_n);
+    PlanetGenerator gen(
+            DoubleRange(0, 0, 900, 600)
+            , generate_mass_alpha, generate_mass_beta
+            , generate_mass_min, generate_mass_max
+    );
     for(auto& p : objects_) {
         gen.Generate(p);
     }
 }
 
 void Universe::ReadProperties(const Properties &properties) {
-    nr_ = properties.generate_n;
-    //properties.
+    universe_g = properties.universe_g;
+    universe_collision_joindist = properties.universe_collision_joindist;
+    universe_collision_k = properties.universe_collision_k;
+    generate_n = properties.generate_n;
+    generate_speed_max = properties.generate_speed_max;
+    generate_border_part = properties.generate_border_part;
+    generate_mass_min = properties.generate_mass_min;
+    generate_mass_max = properties.generate_mass_max;
+    generate_mass_alpha = properties.generate_mass_alpha;
+    generate_mass_beta = properties.generate_mass_beta;
 }
 
 void Universe::WriteProperties(Properties &properties) {
-
+    properties.universe_g = this->universe_g;
+    properties.universe_collision_joindist = this->universe_collision_joindist;
+    properties.universe_collision_k = this->universe_collision_k;
+    properties.generate_n = this->generate_n;
+    properties.generate_speed_max = this->generate_speed_max;
+    properties.generate_border_part = this->generate_border_part;
+    properties.generate_mass_min = this->generate_mass_min;
+    properties.generate_mass_max = this->generate_mass_max;
+    properties.generate_mass_alpha = this->generate_mass_alpha;
+    properties.generate_mass_beta = this->generate_mass_beta;
 }

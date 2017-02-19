@@ -6,6 +6,9 @@
 #define CLIONTEST_PROPERTIES_H
 
 #include <string>
+#include <unordered_set>
+
+class PropertiesReaderWriter;
 
 class Properties {
 public:
@@ -30,9 +33,15 @@ public:
 
     std::string configname_;
     static const std::string filename_;
+
+    void AddReaderWriter(PropertiesReaderWriter&);
+    void RemoveReaderWriter(PropertiesReaderWriter&);
+    void UpdateReaders() const;
+    void UpdateWriters();
 private:
 
     bool ConfigFileExists() const;
+    std::unordered_set<PropertiesReaderWriter*> readerwriters_;
 };
 
 class PropertiesReaderWriter {

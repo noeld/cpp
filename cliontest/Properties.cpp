@@ -68,3 +68,23 @@ bool Properties::WriteConfigFile(const std::string &filename) {
     boost::property_tree::write_json(Properties::filename_, def);
     return false;
 }
+
+void Properties::AddReaderWriter(PropertiesReaderWriter &p) {
+    this->readerwriters_.insert(&p);
+}
+
+void Properties::RemoveReaderWriter(PropertiesReaderWriter &p) {
+    this->readerwriters_.erase(&p);
+}
+
+void Properties::UpdateReaders() const {
+    for(auto& r : this->readerwriters_) {
+        r->ReadProperties(*this);
+    }
+}
+
+void Properties::UpdateWriters() {
+    for(auto& w : this->readerwriters_) {
+        w->WriteProperties(*this);
+    }
+}
