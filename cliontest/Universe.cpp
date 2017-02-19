@@ -6,9 +6,11 @@
 #include "PlanetGenerator.h"
 
 void Universe::advance(double t) {
+    unsigned nr = 0;
     for(auto& p : objects_) {
         if (!p.isActive())
             continue;
+        ++nr;
         for(auto& pp : objects_) {
             if (&p == &pp)
                 continue;
@@ -18,7 +20,7 @@ void Universe::advance(double t) {
             auto dist = dir.magn();
             if (dist <= (pp.getR() + p.getR())) {
                 if (&p < &pp)
-                    nr_ -= Planet::Collide(p, pp, this->universe_collision_k, this->universe_collision_joindist);
+                    Planet::Collide(p, pp, this->universe_collision_k, this->universe_collision_joindist);
             } else {
                 double a = pp.getMass() / ( dist * dist ) * this->universe_g;
                 a *= t;
@@ -30,6 +32,7 @@ void Universe::advance(double t) {
     for(auto& p : objects_) {
         p.advance(t);
     }
+    nr_ = nr;
 }
 
 Universe::~Universe() {
@@ -43,7 +46,7 @@ Universe::Universe(size_t n) : nr_ {n} {
 void Universe::Initialize() {
     objects_.resize(generate_n);
     PlanetGenerator gen(
-            DoubleRange(0, 0, 900, 600)
+            DoubleRange(0.0, 0.0, generate_pos_xmax, generate_pos_ymax)
             , generate_mass_alpha, generate_mass_beta
             , generate_mass_min, generate_mass_max
     );
@@ -63,6 +66,9 @@ void Universe::ReadProperties(const Properties &properties) {
     generate_mass_max = properties.generate_mass_max;
     generate_mass_alpha = properties.generate_mass_alpha;
     generate_mass_beta = properties.generate_mass_beta;
+    generate_pos_xmax = properties.generate_pos_xmax;
+    generate_pos_ymax = properties.generate_pos_ymax;
+
 }
 
 void Universe::WriteProperties(Properties &properties) {
@@ -76,4 +82,6 @@ void Universe::WriteProperties(Properties &properties) {
     properties.generate_mass_max = this->generate_mass_max;
     properties.generate_mass_alpha = this->generate_mass_alpha;
     properties.generate_mass_beta = this->generate_mass_beta;
+    //properties.generate_pos_xmax = this->generate_pos_xmax; // set by Frame
+    //properties.generate_pos_ymax = this->generate_pos_ymax; // set by Frame
 }

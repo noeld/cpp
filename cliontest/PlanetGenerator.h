@@ -12,7 +12,14 @@
 
 class PlanetGenerator {
 public:
-    explicit PlanetGenerator(const DoubleRange& posRange, double alpha=2.1, double beta=2.0, double minMass=1, double maxMass=100);
+    explicit PlanetGenerator(const DoubleRange& posRange
+            , double alpha=2.1
+            , double beta=2.0
+            , double minMass=1
+            , double maxMass=100
+            , double xmax=900
+            , double ymax=600
+    );
 
     virtual ~PlanetGenerator();
     PlanetGenerator(const PlanetGenerator&) = delete;
@@ -22,6 +29,7 @@ public:
     Planet& Generate(Planet&);
 private:
     double minMass_, maxMass_;
+    double xmax_, ymax_;
     std::default_random_engine generator_ {static_cast<std::default_random_engine::result_type >(std::chrono::system_clock::now().time_since_epoch().count()) };
     std::gamma_distribution<double> massDistribution_;
     std::uniform_int_distribution<int> posXDistribution_;

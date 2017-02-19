@@ -37,6 +37,8 @@ bool Properties::ReadConfigFile(const std::string& filename, const std::string& 
         generate_mass_max = def.get<double>("generate.mass.max", generate_mass_max);
         generate_mass_alpha = def.get<double>("generate.mass.alpha", generate_mass_alpha);
         generate_mass_beta = def.get<double>("generate.mass.beta", generate_mass_beta);
+        generate_pos_xmax = def.get<double>("generate.pos.xmax", generate_pos_xmax);
+        generate_pos_ymax = def.get<double>("generate.pos.ymax", generate_pos_xmax);
 
         return true;
     }
@@ -64,6 +66,8 @@ bool Properties::WriteConfigFile(const std::string &filename) {
     def.put<double>(configname_ + ".generate.mass.max", generate_mass_max);
     def.put<double>(configname_ + ".generate.mass.alpha", generate_mass_alpha);
     def.put<double>(configname_ + ".generate.mass.beta", generate_mass_beta);
+    def.put<double>(configname_ + ".generate.pos.xmax", generate_pos_xmax);
+    def.put<double>(configname_ + ".generate.pos.ymax", generate_pos_ymax);
 
     boost::property_tree::write_json(Properties::filename_, def);
     return false;

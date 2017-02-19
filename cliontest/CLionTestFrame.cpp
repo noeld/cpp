@@ -6,11 +6,30 @@
 
 CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) {
     CreateStatusBar();
+
+    wxMenu* menuA = new wxMenu;
+    menuA->Append(ID_Menu_Restart, "&Restart", "Restart univers with new, random setup");
+    menuA->Append(ID_Menu_Stop, "&Pause", "Pause execution");
+    menuA->Append(ID_Menu_Start, "&Continue", "Continue execution");
+    menuA->AppendSeparator();
+    menuA->Append(ID_Menu_Reload, "Re&load", "Reload configuration");
+
+    wxMenuBar* menuBar = new wxMenuBar;
+    menuBar->Append(menuA, "&File");
+    SetMenuBar(menuBar);
+
+    Bind(wxEVT_MENU, &CLionTestFrame::OnRestart, this, ID_Menu_Restart);
+    Bind(wxEVT_MENU, &CLionTestFrame::OnStop, this, ID_Menu_Stop);
+    Bind(wxEVT_MENU, &CLionTestFrame::OnStart, this, ID_Menu_Start);
+    Bind(wxEVT_MENU, &CLionTestFrame::OnReload, this, ID_Menu_Reload);
+
     SetSize(900, 600);
     Bind(wxEVT_PAINT, &CLionTestFrame::OnPaint, this, wxID_ANY);
     Bind(wxEVT_TIMER, &CLionTestFrame::OnTimer, this, wxID_ANY);
     prop_.AddReaderWriter(*this);
     prop_.AddReaderWriter(universe);
+    prop_.generate_pos_xmax = GetClientSize().x;
+    prop_.generate_pos_ymax = GetClientSize().y;
     Restart();
 }
 
@@ -43,6 +62,8 @@ void CLionTestFrame::ReadProperties(const Properties &properties) {
 void CLionTestFrame::WriteProperties(Properties &properties) {
     properties.simulation_intervall = simulation_intervall;
     properties.simulation_f = simulation_f;
+    properties.generate_pos_xmax = GetClientSize().x;
+    properties.generate_pos_ymax = GetClientSize().y;
 }
 
 CLionTestFrame::~CLionTestFrame() {
@@ -63,7 +84,24 @@ void CLionTestFrame::Stop() {
 
 void CLionTestFrame::Restart() {
     Stop();
+    prop_.generate_pos_xmax = GetClientSize().x;
+    prop_.generate_pos_ymax = GetClientSize().y;
     prop_.UpdateReaders();
     universe.Initialize();
     Start();
+}
+
+void CLionTestFrame::OnRestart(wxCommandEvent &event) {
+    Restart();
+}
+void CLionTestFrame::OnStop(wxCommandEvent &event) {
+    Stop();
+}
+void CLionTestFrame::OnStart(wxCommandEvent &event) {
+    Start();
+}
+
+void CLionTestFrame::OnReload(wxCommandEvent &event) {
+    prop_.ReadConfigFile(Properties::filename_, prop_.configname_);
+    prop_.UpdateReaders();
 }

@@ -30,6 +30,8 @@ public:
     double   generate_mass_max { 10000 };
     double   generate_mass_alpha { 0.1 };
     double   generate_mass_beta  { 9.0 };
+    double   generate_pos_xmax   { 900.0 };
+    double   generate_pos_ymax   { 600.0 };
 
     std::string configname_;
     static const std::string filename_;

@@ -11,6 +11,8 @@
 
 class CLionTestFrame : public wxFrame, PropertiesReaderWriter {
 public:
+    enum { ID_Menu_Start=1000, ID_Menu_Stop, ID_Menu_Restart, ID_Menu_Reload };
+
     CLionTestFrame();
 
     virtual ~CLionTestFrame();
@@ -37,6 +39,12 @@ private:
 
     unsigned simulation_intervall { 50 };
     double   simulation_f { 1.0 };
+
+    void OnRestart(wxCommandEvent &event);
+    void OnStop(wxCommandEvent &event);
+    void OnStart(wxCommandEvent &event);
+
+    void OnReload(wxCommandEvent &);
 };
 
 
