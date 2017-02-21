@@ -18,7 +18,7 @@ include(${wxWidgets_USE_FILE})
 
 #set(CMAKE_BUILD_TYPE Release)
 
-set(SOURCE_FILES main.cpp Endianness.cpp Endianness.h Range2D.h Mandelbrot.cpp Mandelbrot.h Vector.cpp Vector.h Planet.cpp Planet.h Universe.cpp Universe.h CLionTestApp.cpp CLionTestApp.h CLionTestFrame.cpp CLionTestFrame.h PlanetGenerator.cpp PlanetGenerator.h Properties.cpp Properties.h)
+set(SOURCE_FILES main.cpp Endianness.cpp Endianness.h Range2D.h Mandelbrot.cpp Mandelbrot.h Vector.cpp Vector.h Planet.cpp Planet.h Universe.cpp Universe.h CLionTestApp.cpp CLionTestApp.h CLionTestFrame.cpp CLionTestFrame.h PlanetGenerator.cpp PlanetGenerator.h Properties.cpp Properties.h Histogram.h)
 add_executable(cliontest ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${wxWidgets_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} boost_filesystem boost_system)
