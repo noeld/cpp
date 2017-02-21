@@ -47,9 +47,12 @@ public:
         unsigned hmax = std::get<2>(*std::max_element(hist_.cbegin(), hist_.cend()
                 , [=](const cluster& a, const cluster& b) -> bool { return std::get<2>(a) < std::get<2>(b); }
                 ));
+        if (hmax == 0)
+            hmax = 1;
         valuesize_ = hmax / resy_;
+        float_type ff = resy_ / hmax;
         for(auto& e : hist_) {
-            std::get<3>(e) = std::get<2>(e) * valuesize_;
+            std::get<3>(e) = std::get<2>(e) * ff;
         }
     }
     decltype(hist_.begin()) begin() { return hist_.begin(); }
