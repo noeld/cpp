@@ -3,6 +3,8 @@
 //
 
 #include "CLionTestFrame.h"
+#include "Histogram.h"
+#include <tuple>
 
 CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) {
     CreateStatusBar();
@@ -44,13 +46,23 @@ void CLionTestFrame::OnPaint(wxPaintEvent &event) {
         dc.DrawCircle(o.getPos().getX(), o.getPos().getY(), o.getR());
     }
 }
-
+template<class T>
+struct MassAccessor {
+    double operator()(const T& e) const { return e.getMass(); }
+};
 void CLionTestFrame::OnTimer(wxTimerEvent &event) {
     universe.advance(simulation_f * simulation_intervall / 1000.0 );
     ++c_;
     Refresh();
-    if  (c_ % 25 == 0)
+    if  (c_ % 25 == 0) {
         SetStatusText(std::to_string(universe.getNr_()));
+        //Histogram<decltype(universe.getObjects()), [=]( decltype(universe.getObjects().begin())& e) { return e->getMass(); }> h(200, 100);
+        //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, double(decltype(universe.getObjects().begin())&)> h(200, 100);
+        //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, MassAccessor<std::remove_reference<decltype(universe.getObjects()[0])>::type>> h(200, 100);
+        Histogram<std::remove_reference<decltype(universe.getObjects())>::type> h(200, 100);
+        h.Refresh(&universe.getObjects(), [=](const Planet& p) { return p.getMass(); });
+        //hist_.Refresh(universe.getObjects())
+    }
 
 }
 

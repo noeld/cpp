@@ -8,6 +8,7 @@
 
 #include <wx/wx.h>
 #include "Universe.h"
+//#include "Histogram.h"
 
 class CLionTestFrame : public wxFrame, PropertiesReaderWriter {
 public:
@@ -33,6 +34,7 @@ private:
     wxBitmap bmp_;
     wxTimer tim_;
     unsigned c_ { 0 };
+    //Histogram hist_ { 200, 100};
 
     Properties prop_;
     Universe universe{500};
