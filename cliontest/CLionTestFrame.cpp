@@ -30,6 +30,7 @@ CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) 
     Bind(wxEVT_TIMER, &CLionTestFrame::OnTimer, this, wxID_ANY);
     prop_.AddReaderWriter(*this);
     prop_.AddReaderWriter(universe);
+    prop_.AddReaderWriter(PlanetPropertyReaderWriter::instance());
     prop_.generate_pos_xmax = GetClientSize().x;
     prop_.generate_pos_ymax = GetClientSize().y;
     Restart();
@@ -39,6 +40,12 @@ void CLionTestFrame::OnPaint(wxPaintEvent &event) {
     wxPaintDC dc(this);
     //auto s = GetClientSize();
     //dc.DrawText("Hallo", s.GetWidth()/2, s.GetHeight()/2);
+    dc.DrawLine(5, 102, 4 + 100, 102);
+    unsigned hx = 0;
+    for (const auto& h : hist_) {
+        dc.DrawLine(5 + hx, 100, 5 + hx, 100 - std::get<3>(h));
+        ++hx;
+    }
     for (auto& o : universe.getObjects()) {
         if (!o.isActive())
             continue;
@@ -52,17 +59,16 @@ struct MassAccessor {
 };
 void CLionTestFrame::OnTimer(wxTimerEvent &event) {
     universe.advance(simulation_f * simulation_intervall / 1000.0 );
-    ++c_;
-    Refresh();
     if  (c_ % 25 == 0) {
         SetStatusText(std::to_string(universe.getNr_()));
         //Histogram<decltype(universe.getObjects()), [=]( decltype(universe.getObjects().begin())& e) { return e->getMass(); }> h(200, 100);
         //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, double(decltype(universe.getObjects().begin())&)> h(200, 100);
         //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, MassAccessor<std::remove_reference<decltype(universe.getObjects()[0])>::type>> h(200, 100);
-        Histogram<std::remove_reference<decltype(universe.getObjects())>::type> h(200, 100);
-        h.Refresh(&universe.getObjects(), [=](const Planet& p) { return p.getMass(); });
+        hist_.Refresh(&universe.getObjects(), [=](const Planet& p) { return p.getMass(); });
         //hist_.Refresh(universe.getObjects())
     }
+    ++c_;
+    Refresh();
 
 }
 
@@ -82,6 +88,7 @@ CLionTestFrame::~CLionTestFrame() {
     prop_.UpdateWriters();
     prop_.RemoveReaderWriter(universe);
     prop_.RemoveReaderWriter(*this);
+    prop_.RemoveReaderWriter(PlanetPropertyReaderWriter::instance());
 }
 
 void CLionTestFrame::Start() {
@@ -100,6 +107,7 @@ void CLionTestFrame::Restart() {
     prop_.generate_pos_ymax = GetClientSize().y;
     prop_.UpdateReaders();
     universe.Initialize();
+    hist_.setRecalibrate_(true);
     Start();
 }
 

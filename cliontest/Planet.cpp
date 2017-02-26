@@ -4,12 +4,14 @@
 
 #include "Planet.h"
 
+double Planet::universe_planet_density { 5.0 };
+
 Planet::Planet() {
     this->r_ = Planet::RadiusFromMass(mass_);
 }
 
 double Planet::RadiusFromMass(const double& m) {
-    return std::pow( m/M_PI, 1.0/6.0);
+    return std::pow( m/M_PI, 1.0/Planet::universe_planet_density);
 }
 
 Planet::Planet(const Vector &pos_, const Vector &speed_, double mass_, bool active = true) : pos_(pos_),
@@ -33,6 +35,7 @@ unsigned Planet::Collide(Planet &a, Planet &b, const double& k, const double& d)
     dist_vec.normalize();
     if (dist_vec * speed_delta > 0) {
         // Distance between Planets already increasing
+        //dist_vec *= -1;
         return 0;
     }
     auto ortho = dist_vec.orthogonal_copy();
@@ -95,4 +98,23 @@ unsigned Planet::BlendWeightedRGB(unsigned x, double wa, unsigned y, double wb) 
     unsigned g = static_cast<unsigned>((EXTRACTCOLOR(x,  8, wa) + EXTRACTCOLOR(y,  8, wb)) / (wa + wb)) & 0xff;
     unsigned b = static_cast<unsigned>((EXTRACTCOLOR(x,  0, wa) + EXTRACTCOLOR(y,  0, wb)) / (wa + wb)) & 0xff;
     return (r << 16) + (g << 8) + b ;
+}
+
+PlanetPropertyReaderWriter::~PlanetPropertyReaderWriter() {
+
+}
+
+PlanetPropertyReaderWriter::PlanetPropertyReaderWriter() {}
+
+void PlanetPropertyReaderWriter::ReadProperties(const Properties &properties) {
+    Planet::universe_planet_density = properties.universe_planet_density;
+}
+
+void PlanetPropertyReaderWriter::WriteProperties(Properties &properties) {
+    properties.universe_planet_density = Planet::universe_planet_density;
+}
+
+PlanetPropertyReaderWriter &PlanetPropertyReaderWriter::instance() {
+    static PlanetPropertyReaderWriter pprw;
+    return pprw;
 }

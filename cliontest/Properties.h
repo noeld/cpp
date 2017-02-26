@@ -21,6 +21,7 @@ public:
     unsigned simulation_intervall { 50 };
     double   simulation_f { 1.0 };
     double   universe_g { 6.6740831e-11 * 100e8 };
+    double   universe_planet_density { 5.0 };
     double   universe_collision_joindist { 0.2 };
     double   universe_collision_k { 0.5 };
     unsigned generate_n { 1000 };

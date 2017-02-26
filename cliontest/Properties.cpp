@@ -28,6 +28,7 @@ bool Properties::ReadConfigFile(const std::string& filename, const std::string& 
         simulation_intervall = def.get<unsigned>("simulation.intervall", simulation_intervall);
         simulation_f = def.get<double>("simulation.f", simulation_f);
         universe_g = def.get<double>("universe.g", universe_g);
+        universe_planet_density = def.get<double>("universe.planet.density", universe_planet_density);
         universe_collision_joindist = def.get<double>("universe.collision.joindist", universe_collision_joindist);
         universe_collision_k = def.get<double>("universe.collision.k", universe_collision_k);
         generate_n = def.get<unsigned>("generate.n", generate_n);
@@ -57,6 +58,7 @@ bool Properties::WriteConfigFile(const std::string &filename) {
     def.put<unsigned>(configname_ + ".simulation.intervall", simulation_intervall);
     def.put<double>(configname_ + ".simulation.f", simulation_f);
     def.put<double>(configname_ + ".universe.g", universe_g);
+    def.put<double>(configname_ + ".universe.planet.density", universe_planet_density);
     def.put<double>(configname_ + ".universe.collision.joindist", universe_collision_joindist);
     def.put<double>(configname_ + ".universe.collision.k", universe_collision_k);
     def.put<unsigned>(configname_ + ".generate.n", generate_n);

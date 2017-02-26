@@ -8,6 +8,7 @@
 
 #include <wx/wx.h>
 #include "Universe.h"
+#include "Histogram.h"
 //#include "Histogram.h"
 
 class CLionTestFrame : public wxFrame, PropertiesReaderWriter {
@@ -38,6 +39,7 @@ private:
 
     Properties prop_;
     Universe universe{500};
+    Histogram<std::remove_reference<decltype(universe.getObjects())>::type> hist_{100, 100};
 
     unsigned simulation_intervall { 50 };
     double   simulation_f { 1.0 };

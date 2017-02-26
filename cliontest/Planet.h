@@ -7,6 +7,9 @@
 
 
 #include "Vector.h"
+#include "Properties.h"
+
+class PlanetPropertyReaderWriter;
 
 class Planet {
 public:
@@ -111,9 +114,24 @@ private:
     double mass_ {1.0};
     double r_;
     unsigned rgb_{0};
+    static double universe_planet_density;
 
 private:
     bool active {true};
+
+    friend class PlanetPropertyReaderWriter;
+};
+
+class PlanetPropertyReaderWriter : public PropertiesReaderWriter {
+public:
+    static PlanetPropertyReaderWriter& instance();
+private:
+    PlanetPropertyReaderWriter();
+    virtual ~PlanetPropertyReaderWriter();
+private:
+    void ReadProperties(const Properties &properties) override;
+
+    void WriteProperties(Properties &properties) override;
 };
 
 
