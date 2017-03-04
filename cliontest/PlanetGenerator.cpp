@@ -11,12 +11,15 @@ PlanetGenerator::PlanetGenerator(const DoubleRange &posRange
         , double maxMass
         , double xmax
         , double ymax
+        , double minSpeed
+        , double maxSpeed
 )
 : massDistribution_(alpha, beta), posXDistribution_(posRange.xmin_, posRange.xmax_)
         , posYDistribution_(posRange.ymin_, posRange.ymax_)
         , rgbDistribution_(0, 255)
         , minMass_(minMass), maxMass_(maxMass)
         , xmax_(xmax), ymax_(ymax)
+        , minSpeed_ {minSpeed}, maxSpeed_{maxSpeed}
 {
 
 }
@@ -29,7 +32,11 @@ Planet &PlanetGenerator::Generate(Planet &p) {
     p.setPos(Vector(x,y));
     int rgb = (rgbDistribution_(generator_) << 16) + (rgbDistribution_(generator_) << 8) + rgbDistribution_(generator_);
     p.setRgb_(rgb);
-    p.setSpeed(Vector(0.0, 0.0));
+
+    auto s = minSpeed_ + speedDistribution_(generator_) * (maxSpeed_ - minSpeed_);
+    auto center = Vector(xmax_ / 2.0, ymax_ / 2.0);
+    Vector speed = (center - p.getPos()).orthogonal().normalize() * s;
+    p.setSpeed(speed);
     p.setActive(true);
     return p;
 }

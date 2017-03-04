@@ -25,6 +25,7 @@ public:
     double   universe_collision_joindist { 0.2 };
     double   universe_collision_k { 0.5 };
     unsigned generate_n { 1000 };
+    double   generate_speed_min  {  0.0 };
     double   generate_speed_max { 5 };
     double   generate_border_part { 0.05 };
     double   generate_mass_min { 50 };

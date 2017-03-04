@@ -32,7 +32,8 @@ bool Properties::ReadConfigFile(const std::string& filename, const std::string& 
         universe_collision_joindist = def.get<double>("universe.collision.joindist", universe_collision_joindist);
         universe_collision_k = def.get<double>("universe.collision.k", universe_collision_k);
         generate_n = def.get<unsigned>("generate.n", generate_n);
-        generate_speed_max = def.get<double>("generate.speed_max", generate_speed_max);
+        generate_speed_min = def.get<double>("generate.speed.min", generate_speed_min);
+        generate_speed_max = def.get<double>("generate.speed.max", generate_speed_max);
         generate_border_part = def.get<double>("generate.border.part", generate_border_part);
         generate_mass_min = def.get<double>("generate.mass.min", generate_mass_min);
         generate_mass_max = def.get<double>("generate.mass.max", generate_mass_max);
@@ -40,7 +41,6 @@ bool Properties::ReadConfigFile(const std::string& filename, const std::string& 
         generate_mass_beta = def.get<double>("generate.mass.beta", generate_mass_beta);
         generate_pos_xmax = def.get<double>("generate.pos.xmax", generate_pos_xmax);
         generate_pos_ymax = def.get<double>("generate.pos.ymax", generate_pos_xmax);
-
         return true;
     }
     return false;
@@ -62,7 +62,8 @@ bool Properties::WriteConfigFile(const std::string &filename) {
     def.put<double>(configname_ + ".universe.collision.joindist", universe_collision_joindist);
     def.put<double>(configname_ + ".universe.collision.k", universe_collision_k);
     def.put<unsigned>(configname_ + ".generate.n", generate_n);
-    def.put<double>(configname_ + ".generate.speed_max", generate_speed_max);
+    def.put<double>(configname_ + ".generate.speed.min", generate_speed_min);
+    def.put<double>(configname_ + ".generate.speed.max", generate_speed_max);
     def.put<double>(configname_ + ".generate.border.part", generate_border_part);
     def.put<double>(configname_ + ".generate.mass.min", generate_mass_min);
     def.put<double>(configname_ + ".generate.mass.max", generate_mass_max);

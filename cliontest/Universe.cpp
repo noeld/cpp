@@ -49,6 +49,8 @@ void Universe::Initialize() {
             DoubleRange(0.0, 0.0, generate_pos_xmax, generate_pos_ymax)
             , generate_mass_alpha, generate_mass_beta
             , generate_mass_min, generate_mass_max
+            , generate_pos_xmax, generate_pos_ymax
+            , generate_speed_min, generate_speed_max
     );
     for(auto& p : objects_) {
         gen.Generate(p);
@@ -60,6 +62,7 @@ void Universe::ReadProperties(const Properties &properties) {
     universe_collision_joindist = properties.universe_collision_joindist;
     universe_collision_k = properties.universe_collision_k;
     generate_n = properties.generate_n;
+    generate_speed_min = properties.generate_speed_min;
     generate_speed_max = properties.generate_speed_max;
     generate_border_part = properties.generate_border_part;
     generate_mass_min = properties.generate_mass_min;
@@ -76,6 +79,7 @@ void Universe::WriteProperties(Properties &properties) {
     properties.universe_collision_joindist = this->universe_collision_joindist;
     properties.universe_collision_k = this->universe_collision_k;
     properties.generate_n = this->generate_n;
+    properties.generate_speed_min = this->generate_speed_min;
     properties.generate_speed_max = this->generate_speed_max;
     properties.generate_border_part = this->generate_border_part;
     properties.generate_mass_min = this->generate_mass_min;
