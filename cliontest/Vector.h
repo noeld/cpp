@@ -72,7 +72,7 @@ public:
     double operator*(const Vector& v) const { return this->x_ * v.x_ + this->y_ * v.y_; }
     double magn() const { return std::sqrt( x_ * x_ + y_ * y_ ); }
     Vector& normalize() { *this *= 1/magn(); return *this; }
-    Vector normalize_copy() { auto f = magn(); return Vector(x_ * f, y_ * f); }
+    Vector normalize_copy() { auto f = 1/magn(); return Vector(x_ * f, y_ * f); }
     double dist(const Vector& v) const { return (*this - v).magn(); }
     Vector orthogonal_copy() const { return Vector(y_, -x_); }
     Vector& orthogonal() { std::tie(x_, y_) = std::tuple<decltype(x_), decltype(y_)>(y_, -x_); return *this; }
