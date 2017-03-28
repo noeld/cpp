@@ -48,8 +48,16 @@ private:
     std::unordered_set<PropertiesReaderWriter*> readerwriters_;
 };
 
+/**
+ * A generic interface for classes using any parameters.
+ */
 class PropertiesReaderWriter {
 public:
+    /**
+     * Function will be called whenever a PropertiesReaderWriter shall
+     * read properties from
+     * @param Properties the properties object
+     */
     virtual void ReadProperties(const Properties&) =0;
     virtual void WriteProperties(Properties&) =0;
 

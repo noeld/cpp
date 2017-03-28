@@ -46,7 +46,9 @@ bool Properties::ReadConfigFile(const std::string& filename, const std::string& 
     return false;
 }
 
-bool Properties::ConfigFileExists() const { return boost::filesystem::exists(boost::filesystem::path(Properties::filename_)); }
+bool Properties::ConfigFileExists() const {
+    return boost::filesystem::exists(boost::filesystem::path(Properties::filename_));
+}
 
 bool Properties::WriteConfigFile(const std::string &filename) {
     using boost::property_tree::iptree;

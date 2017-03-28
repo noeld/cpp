@@ -3,8 +3,6 @@
 //
 
 #include "CLionTestFrame.h"
-#include "Histogram.h"
-#include <tuple>
 
 CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) {
     CreateStatusBar();
@@ -33,6 +31,8 @@ CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) 
     prop_.AddReaderWriter(PlanetPropertyReaderWriter::instance());
     prop_.generate_pos_xmax = GetClientSize().x;
     prop_.generate_pos_ymax = GetClientSize().y;
+
+    this->SetBackgroundColour(wxColour(0x33, 0x33, 0x33));
     Restart();
 }
 
@@ -50,6 +50,7 @@ void CLionTestFrame::OnPaint(wxPaintEvent &event) {
         if (!o.isActive())
             continue;
         dc.SetBrush(wxBrush(wxColour(o.getRgb_())));
+        //dc.DrawPoint(o.getPos().getX(), o.getPos().getY());
         dc.DrawCircle(o.getPos().getX(), o.getPos().getY(), o.getR());
     }
 }
@@ -58,6 +59,8 @@ struct MassAccessor {
     double operator()(const T& e) const { return e.getMass(); }
 };
 void CLionTestFrame::OnTimer(wxTimerEvent &event) {
+
+    auto pt = std::chrono::high_resolution_clock::now();
     universe.advance(simulation_f * simulation_intervall / 1000.0 );
     if  (c_ % 25 == 0) {
         SetStatusText(std::to_string(universe.getNr_()));
@@ -93,6 +96,7 @@ CLionTestFrame::~CLionTestFrame() {
 
 void CLionTestFrame::Start() {
     prop_.UpdateReaders();
+    last_time_point_ = std::chrono::high_resolution_clock::now();
     tim_.Start(this->simulation_intervall);
     SetStatusText("Simulation started");
 }

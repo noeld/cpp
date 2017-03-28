@@ -23,7 +23,13 @@ public:
     const std::vector<Planet> &getObjects() const {
         return objects_;
     }
+    /// Advance universe using delta time
+    /// \param t time delta in seconds or fractions thereof
+    /// \returns void
     void advance(double t);
+
+    /// Get number of active objects
+    /// \returns number of active objects
     size_t getNr_() const { return nr_; }
 
     void ReadProperties(const Properties &properties) override;
