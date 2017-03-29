@@ -60,8 +60,8 @@ struct MassAccessor {
 };
 void CLionTestFrame::OnTimer(wxTimerEvent &event) {
 
-    auto pt = std::chrono::high_resolution_clock::now();
-    universe.advance(simulation_f * simulation_intervall / 1000.0 );
+    double t = tm_.Duration().count() / 1'000'000'000.0;
+    universe.advance( t );
     if  (c_ % 25 == 0) {
         SetStatusText(std::to_string(universe.getNr_()));
         //Histogram<decltype(universe.getObjects()), [=]( decltype(universe.getObjects().begin())& e) { return e->getMass(); }> h(200, 100);
@@ -96,8 +96,8 @@ CLionTestFrame::~CLionTestFrame() {
 
 void CLionTestFrame::Start() {
     prop_.UpdateReaders();
-    last_time_point_ = std::chrono::high_resolution_clock::now();
     tim_.Start(this->simulation_intervall);
+    tm_.Start();
     SetStatusText("Simulation started");
 }
 

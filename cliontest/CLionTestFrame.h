@@ -9,6 +9,7 @@
 #include <wx/wx.h>
 #include "Universe.h"
 #include "Histogram.h"
+#include "TimeMeasure.h"
 //#include "Histogram.h"
 
 class CLionTestFrame : public wxFrame, PropertiesReaderWriter {
@@ -36,7 +37,7 @@ private:
     wxTimer tim_;
     unsigned c_ { 0 };
     //Histogram hist_ { 200, 100};
-    std::chrono::high_resolution_clock::time_point last_time_point_;
+    TimeMeasure tm_ { false };
 
     Properties prop_;
     Universe universe{500};
