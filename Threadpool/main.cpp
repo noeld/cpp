@@ -10,28 +10,74 @@ public:
     enum class Status : uint8_t { Waiting, Ready, Running, Finished, Aborted };
     friend class Threadpool;
 
+    Task() : task_number_(++counter) {
+        std::cerr << __FUNCTION__ << " " << task_number_ << std::endl;
+    }
+
+    virtual ~Task() {
+        std::cerr << __FUNCTION__ << " " << task_number_ << " (" << Duration().count() / 1000.0 << ")" << std::endl;
+    }
+
     void Operate() {
         setStatus(Status::Running);
+        start_time_ = end_time_ = std::chrono::system_clock::now();
         auto r = Run();
+        end_time_ = std::chrono::system_clock::now();
         setStatus(r);
     }
     Status getStatus() const  {
         return status_;
     }
 
+    unsigned int getTask_number() const {
+        return task_number_;
+    }
+    const std::chrono::system_clock::time_point &getStart_time() const {
+        return start_time_;
+    }
+
+    const std::chrono::system_clock::time_point &getEnd_time() const {
+        return end_time_;
+    }
+    std::chrono::milliseconds Duration() const {
+        std::chrono::milliseconds d;
+        switch(status_) {
+            case Status::Waiting:
+                break;
+            case Status::Running:
+                d = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start_time_);
+                break;
+            case Status::Aborted:
+                // fallthrough
+            case Status::Finished:
+                d = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_ - start_time_);
+                break;
+            case Status::Ready:
+                break;
+        }
+        return d;
+    }
 protected:
     virtual Status Run() =0;
     void setStatus(Status status)  {
         status_ = status;
     }
 private:
+
     Status status_ { Status::Ready };
-    std::shared_future<Task::Status> future_;
+    //std::shared_future<Task::Status> future_;
+    static std::atomic<unsigned> counter;
+    unsigned task_number_;
+    std::chrono::system_clock::time_point start_time_, end_time_;
 };
+
+std::atomic<unsigned> Task::counter {0};
 
 class WaitTask : public Task {
 public:
-    explicit WaitTask(const std::chrono::milliseconds &duration) : duration_(duration) {}
+    explicit WaitTask(const std::chrono::milliseconds &duration) : duration_(duration) {
+        std::cerr << __FUNCTION__ << std::endl;
+    }
 
     virtual ~WaitTask() {
         std::cerr << __FUNCTION__ << std::endl;
@@ -49,18 +95,39 @@ private:
     std::chrono::milliseconds duration_;
 };
 
+template<typename T>
+class LambdaTask : public Task {
+public:
+    explicit LambdaTask(T&& lambda) : lambda_(std::move(lambda)) {
+        std::cerr << __FUNCTION__ << std::endl;
+    }
+    virtual ~LambdaTask() {
+        std::cerr << __FUNCTION__ << std::endl;
+    }
+
+protected:
+    Status Run() override {
+        lambda_();
+        return Status::Finished;
+    }
+
+private:
+    T lambda_;
+};
+
 class Threadpool {
 public:
     void ThreadFunction(size_t thread_number) {
         //std::unique_lock<std::mutex> l(m_);
-        for(unsigned task_number = 0; ; ++task_number) {
+        for(unsigned local_task_number = 0; ; ++local_task_number) {
             auto t = StartTask(thread_number);
             if (t == nullptr) {
                 std::cerr << "Thread number " << thread_number << " ending." << std::endl;
                 return;
             } else {
-                std::cerr << "Thread number " << thread_number << " starting task number " << task_number << std::endl;
-                t->Run();
+                std::cerr << "Thread number " << thread_number << " starting task number " << t->task_number_ << std::endl;
+                t->Operate();
+                std::cerr << "Thread number " << thread_number << " finished task number " << t->task_number_ << std::endl;
                 FinishTask(std::move(t), thread_number);
             }
         }
@@ -82,8 +149,8 @@ public:
 
     void Push(std::shared_ptr<Task>&& task) {
         std::unique_lock<std::mutex> l(m_);
-        waiting_.push(task);
         task->setStatus(Task::Status::Waiting);
+        waiting_.push(task);
         cond_push_.notify_one();
     }
 
@@ -98,21 +165,18 @@ public:
 
     void CleanupFinished() {
         std::cerr << __FUNCTION__ << std::endl;
-        std::unique_ptr<decltype(finished_)> ptr;
+        decltype(finished_) copy;
         {
             std::unique_lock<std::mutex> l(m_);
-            decltype(finished_) copy(std::move(finished_));
+            copy = std::move(finished_);
             std::cerr << "finished.size() " << finished_.size() << std::endl;
         }
-        /*for(auto i = ptr->size(); i > 0; --i) {
-            ptr->pop();
-        }*/
     }
 
 protected:
     std::shared_ptr<Task> StartTask(size_t thread_number) {
         std::unique_lock<std::mutex> l(m_);
-        while(waiting_.size() == 0) {
+        while(active_ && waiting_.size() == 0) {
             cond_push_.wait(l);
         }
         if (!active_) {
@@ -156,7 +220,15 @@ int main(int argn, char* argv[]) {
             tp.CleanupFinished();
             continue;
         }
-        tp.Push(std::move(std::shared_ptr<Task>(new WaitTask(std::chrono::seconds(u)))));
+        if (u == 88) {
+            auto l = [=]{ std::cout << "Lambda function " << u << std::endl; };
+            tp.Push(std::move(std::shared_ptr<Task>(new LambdaTask<decltype(l)>(
+                 std::move(l)
+            ))));
+            continue;
+        }
+        if (u > 0)
+            tp.Push(std::move(std::shared_ptr<Task>(new WaitTask(std::chrono::seconds(u)))));
     } while( u > 0 );
     return 0;
 }
