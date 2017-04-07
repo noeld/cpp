@@ -40,6 +40,8 @@ public:
             setStatus(r);
             promise_.set_value(r);
         } catch(...) {
+            end_time_ = std::chrono::system_clock::now();
+            setStatus(Status::Aborted);
             promise_.set_exception(std::current_exception());
         }
     }
@@ -159,7 +161,7 @@ public:
     {
         std::unique_lock<std::mutex> l(m_);
         for (unsigned i = 0; i < n; ++i) {
-            threads_.emplace_back([=]{this->ThreadFunction(i);});
+            threads_.emplace_back([=]{this->ThreadFunction(++counter);});
         }
     }
 
@@ -225,6 +227,7 @@ private:
     std::queue<std::shared_ptr<Task>> finished_;
     std::condition_variable cond_push_;
     std::atomic<bool> active_ { true };
+    static std::atomic<unsigned> counter;
 };
 
 

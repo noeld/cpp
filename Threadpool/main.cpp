@@ -7,6 +7,7 @@ int main(int argn, char* argv[]) {
         n = std::stoul(argv[1]);
     }
     Threadpool tp(n);
+    Threadpool tp2(n);
 
     auto l = [=]{ std::this_thread::sleep_for(std::chrono::seconds(3)); };
     auto s = std::shared_ptr<Task>(new LambdaTask<decltype(l)>(std::move(l)));
@@ -17,11 +18,12 @@ int main(int argn, char* argv[]) {
             std::cout << "Waiting for ready" << std::endl;
             st = f.wait_for(std::chrono::milliseconds(500));
         } while(st != std::future_status::ready);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         std::cout << "Finished waiting for ready" << std::endl;
     };
     auto s2 = std::shared_ptr<Task>(new LambdaTask<decltype(l2)>(std::move(l2)));
     tp.Push(std::move(s));
-    tp.Push(std::move(s2));
+    tp2.Push(std::move(s2));
 
     unsigned u;
     do {

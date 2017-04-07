@@ -6,3 +6,5 @@
 
 
 std::atomic<unsigned> Task::counter {0};
+
+std::atomic<unsigned> Threadpool::counter {0};
