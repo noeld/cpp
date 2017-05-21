@@ -38,7 +38,7 @@ unsigned int Mandelbrot::iter(const double& x, const double& y, unsigned int max
     complex_t c(x,y), cc(c);
     for(unsigned i = 0; i < maxit; ++i) {
         cc = std::pow(cc, p) + c;
-        if (std::abs(cc) > 4.0)
+        if (std::norm(cc) > 4.0)
             return i;
     }
     return maxit - 1;
