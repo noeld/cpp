@@ -126,6 +126,8 @@ void CLionTestFrame::OnStart(wxCommandEvent &event) {
 }
 
 void CLionTestFrame::OnReload(wxCommandEvent &event) {
+    Stop();
     prop_.ReadConfigFile(Properties::filename_, prop_.configname_);
     prop_.UpdateReaders();
+    Start();
 }

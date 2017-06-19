@@ -170,6 +170,10 @@ public:
             Stop();
     }
 
+    size_t FinishedSize() const {
+        return finished_.size();
+    }
+
     void Push(std::shared_ptr<Task>&& task) {
         std::unique_lock<std::mutex> l(m_);
         task->setStatus(Task::Status::Waiting);
@@ -195,8 +199,8 @@ public:
             std::cerr << "finished.size() " << finished_.size() << std::endl;
         }
     }
-
 protected:
+
     std::shared_ptr<Task> DequeueNextTask(size_t thread_number) {
         std::unique_lock<std::mutex> l(m_);
         while(active_ && waiting_.size() == 0) {
@@ -218,7 +222,6 @@ protected:
         running_[thread_number] = std::shared_ptr<Task>(nullptr);
         finished_.push(std::move(task));
     }
-
 private:
     std::vector<std::thread> threads_;
     std::mutex m_;

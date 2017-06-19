@@ -131,6 +131,40 @@ std::string Base64::Decode(const std::string &s) {
     return ret;
 }
 
+template<typename T, typename I>
+void Base64::EncodeIt(T &start, const T &end, I &in) {
+    char c[3];
+    size_t i = 0;
+    while(start != end) {
+        c[i % 3] = *start;
+        ++start;
+        if (++i % 3 == 0) {
+            //conversion_t t;
+            //t.cu = 0;
+            conversion_t t2;
+            t2.cu = EncodeByteTriplet(reinterpret_cast<unsigned char*>(&c[0]));
+            *in = (t2.cc[0]);
+            *in = (t2.cc[1]);
+            *in = (t2.cc[2]);
+            *in = (t2.cc[3]);
+        }
+    }
+    if (i % 3 != 0) {
+        auto missing = 3 - (i % 3);
+        for (auto n = i % 3; n < 3; ++n) {
+            c[n] = 0;
+        }
+        //conversion_t t;
+        //t.cu = 0;
+        conversion_t t2;
+        t2.cu = EncodeByteTriplet(reinterpret_cast<unsigned char*>(&c[0]));
+        *in = (t2.cc[0]);
+        *in = (t2.cc[1]);
+        *in = ( (missing >= 2) ? '=' : t2.cc[2]);
+        *in = ('=');
+    }
+}
+
 //void Base64::BuildReverseAlpha(const decltype(Base64::alpha_) &alpha, std::array<char, 0x80> &ralpha) {
 //    std::fill(ralpha.begin(), ralpha.end(), RALPHA_UNDEFINED);
 //    {

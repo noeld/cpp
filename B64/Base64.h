@@ -25,6 +25,7 @@ public:
 
     static uint32_t EncodeByteTriplet(const unsigned char *c);
     static std::string Encode(const std::string&);
+    template<typename T, typename I> static void EncodeIt(T& start, const T& end, I& in);
     //static void BuildReverseAlpha(const decltype(Base64::alpha_) &, std::array<char, 0x80> &);
     static uint32_t DecodeCharQuadruplet(const char *c);
     static std::string Decode(const std::string&);
