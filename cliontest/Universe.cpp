@@ -6,33 +6,43 @@
 #include "PlanetGenerator.h"
 
 void Universe::advance(double t) {
-    unsigned nr = 0;
-    for(auto& p : objects_) {
-        if (!p.isActive())
-            continue;
-        ++nr;
-        for(auto& pp : objects_) {
-            if (&p == &pp)
+    //for(auto& p : objects_) {
+    for(size_t i = 0; i < activeObjects; ++i) {
+        //for(auto& pp : objects_) {
+        //if (!objects_[i].isActive())
+          //  continue;
+        for(size_t j = 0; j < activeObjects; ++j) {
+            if (i == j)
                 continue;
-            if (!pp.isActive())
-                continue;
-            auto dir = pp.getPos() - p.getPos();
+            //if (!objects_[j].isActive())
+              //  continue;
+            auto dir = objects_[j].getPos() - objects_[i].getPos();
             auto dist = dir.magn();
-            if (dist <= (pp.getR() + p.getR())) {
-                if (&p < &pp)
-                    Planet::Collide(p, pp, this->universe_collision_k, this->universe_collision_joindist);
+            if (dist <= (objects_[j].getR() + objects_[i].getR())) {
+                if (i <j) {
+                    Planet::Collide(objects_[i], objects_[j], this->universe_collision_k,
+                                    this->universe_collision_joindist);
+                    if (!objects_[i].isActive()) {
+                        --activeObjects;
+                        std::swap(objects_[i], objects_[activeObjects]);
+                    } else if (!objects_[j].isActive()) {
+                        --activeObjects;
+                        std::swap(objects_[j], objects_[activeObjects]);
+                    }
+                }
             } else {
-                double a = pp.getMass() / ( dist * dist ) * this->universe_g;
+                double a = objects_[j].getMass() / ( dist * dist ) * this->universe_g;
                 a *= t;
                 dir.normalize() *= a;
-                p.Speed() += dir;
+                objects_[i].Speed() += dir;
             }
         }
     }
-    for(auto& p : objects_) {
-        p.advance(t);
+    //for(auto& p : objects_) {
+    for(size_t i = 0; i < activeObjects; ++i) {
+        objects_[i].advance(t);
     }
-    nr_ = nr;
+    nr_ = activeObjects;
 }
 
 Universe::~Universe() {
@@ -55,6 +65,7 @@ void Universe::Initialize() {
     for(auto& p : objects_) {
         gen.Generate(p);
     }
+    this->activeObjects = generate_n;
 }
 
 void Universe::ReadProperties(const Properties &properties) {

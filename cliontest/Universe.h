@@ -40,6 +40,7 @@ public:
 
 private:
     std::vector<Planet> objects_;
+    size_t activeObjects = 0;
 
     size_t nr_;
     double   universe_g { 6.6740831e-11 * 100e8 };

@@ -61,7 +61,7 @@ struct MassAccessor {
 void CLionTestFrame::OnTimer(wxTimerEvent &event) {
 
     double t = tm_.Duration().count() / 1'000'000'000.0;
-    universe.advance( t );
+    universe.advance( t * simulation_f );
     if  (c_ % 25 == 0) {
         SetStatusText(std::to_string(universe.getNr_()));
         //Histogram<decltype(universe.getObjects()), [=]( decltype(universe.getObjects().begin())& e) { return e->getMass(); }> h(200, 100);
