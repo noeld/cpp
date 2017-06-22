@@ -4,17 +4,17 @@
 
 #include "Planet.h"
 
-double Planet::universe_planet_density { 5.0 };
+Planet::float_t Planet::universe_planet_density { 5.0 };
 
 Planet::Planet() {
     this->r_ = Planet::RadiusFromMass(mass_);
 }
 
-double Planet::RadiusFromMass(const double& m) {
+Planet::float_t Planet::RadiusFromMass(const float_t& m) {
     return std::pow( m/M_PI, 1.0/Planet::universe_planet_density);
 }
 
-Planet::Planet(const Vector &pos_, const Vector &speed_, double mass_, bool active = true) : pos_(pos_),
+Planet::Planet(const Vector<float_t> &pos_, const Vector<float_t> &speed_, float_t mass_, bool active = true) : pos_(pos_),
                                                                                                  speed_(speed_),
                                                                                                  mass_(mass_),
                                                                                                  active(active) {
@@ -25,14 +25,18 @@ Planet::~Planet() {
 
 }
 
-unsigned Planet::Collide(Planet &a, Planet &b, const double& k, const double& d) {
+unsigned Planet::Collide(Planet &a, Planet &b, const float_t& k, const float_t& d) {
     auto speed_delta = a.speed_ - b.speed_;
-    if (speed_delta.magn() <= d) {
+    if (speed_delta.length() <= d) {
         Planet::Join(a, b);
         return 1;
     }
     auto dist_vec = (a.pos_ - b.pos_);
     dist_vec.normalize();
+    if (std::isnan(dist_vec.getX()) || std::isnan(dist_vec.getY())) {
+        Planet::Join(a, b);
+        return 1;
+    }
     if (dist_vec * speed_delta > 0) {
         // Distance between Planets already increasing
         //dist_vec *= -1;
@@ -79,7 +83,7 @@ var big = this;
 			var mm = big.m + small.m;
 			var rr = this.radiusFromMass(mm);
 			var d = big.pos.sub_copy(small.pos);
-			var dmagn = d.magn();
+			var dmagn = d.length();
 			var f = small.m / mm;
 			var pp = big.pos.add_copy(d.mul(-f));
 			var ss = big.speed.mul_copy(big.m / mm).add(small.speed.mul_copy(small.m / mm));
@@ -92,8 +96,8 @@ var big = this;
  * */
 }
 
-#define EXTRACTCOLOR(a, s, w) (static_cast<double>(((a) >> (s)) & 0xff) * w)
-unsigned Planet::BlendWeightedRGB(unsigned x, double wa, unsigned y, double wb) {
+#define EXTRACTCOLOR(a, s, w) (static_cast<float_t>(((a) >> (s)) & 0xff) * w)
+unsigned Planet::BlendWeightedRGB(unsigned x, float_t wa, unsigned y, float_t wb) {
     unsigned r = static_cast<unsigned>((EXTRACTCOLOR(x, 16, wa) + EXTRACTCOLOR(y, 16, wb)) / (wa + wb)) & 0xff;
     unsigned g = static_cast<unsigned>((EXTRACTCOLOR(x,  8, wa) + EXTRACTCOLOR(y,  8, wb)) / (wa + wb)) & 0xff;
     unsigned b = static_cast<unsigned>((EXTRACTCOLOR(x,  0, wa) + EXTRACTCOLOR(y,  0, wb)) / (wa + wb)) & 0xff;

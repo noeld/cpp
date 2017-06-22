@@ -5,7 +5,7 @@
 #include "Universe.h"
 #include "PlanetGenerator.h"
 
-void Universe::advance(double t) {
+void Universe::advance(Planet::float_t t) {
     //for(auto& p : objects_) {
     for(size_t i = 0; i < activeObjects; ++i) {
         //for(auto& pp : objects_) {
@@ -17,7 +17,7 @@ void Universe::advance(double t) {
             //if (!objects_[j].isActive())
               //  continue;
             auto dir = objects_[j].getPos() - objects_[i].getPos();
-            auto dist = dir.magn();
+            auto dist = dir.length();
             if (dist <= (objects_[j].getR() + objects_[i].getR())) {
                 if (i <j) {
                     Planet::Collide(objects_[i], objects_[j], this->universe_collision_k,
@@ -31,7 +31,7 @@ void Universe::advance(double t) {
                     }
                 }
             } else {
-                double a = objects_[j].getMass() / ( dist * dist ) * this->universe_g;
+                Planet::float_t a = objects_[j].getMass() / ( dist * dist ) * this->universe_g;
                 a *= t;
                 dir.normalize() *= a;
                 objects_[i].Speed() += dir;

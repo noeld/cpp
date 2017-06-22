@@ -12,15 +12,17 @@
 
 class PlanetGenerator {
 public:
+    using float_t = Planet::float_t;
+    using vector_t = Planet::vector_t ;
     explicit PlanetGenerator(const DoubleRange& posRange
-            , double alpha=2.1
-            , double beta=2.0
-            , double minMass=1
-            , double maxMass=100
-            , double xmax=900
-            , double ymax=600
-            , double minSpeed = 0.0
-            , double maxSpeed = 10.0
+            , float_t alpha=2.1
+            , float_t beta=2.0
+            , float_t minMass=1
+            , float_t maxMass=100
+            , float_t xmax=900
+            , float_t ymax=600
+            , float_t minSpeed = 0.0
+            , float_t maxSpeed = 10.0
     );
 
     virtual ~PlanetGenerator();
@@ -30,11 +32,11 @@ public:
     Planet Generate();
     Planet& Generate(Planet&);
 private:
-    double minMass_, maxMass_, minSpeed_, maxSpeed_;
-    double xmax_, ymax_;
+    float_t minMass_, maxMass_, minSpeed_, maxSpeed_;
+    float_t xmax_, ymax_;
     std::default_random_engine generator_ {static_cast<std::default_random_engine::result_type >(std::chrono::system_clock::now().time_since_epoch().count()) };
-    std::gamma_distribution<double> massDistribution_;
-    std::gamma_distribution<double> speedDistribution_ {2.0, 2.0};
+    std::gamma_distribution<float_t> massDistribution_;
+    std::gamma_distribution<float_t> speedDistribution_ {2.0, 2.0};
     std::uniform_int_distribution<int> posXDistribution_;
     std::uniform_int_distribution<int> posYDistribution_;
     std::uniform_int_distribution<int> rgbDistribution_;

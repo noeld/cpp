@@ -46,9 +46,11 @@ void CLionTestFrame::OnPaint(wxPaintEvent &event) {
         dc.DrawLine(5 + hx, 100, 5 + hx, 100 - std::get<3>(h));
         ++hx;
     }
-    for (auto& o : universe.getObjects()) {
-        if (!o.isActive())
-            continue;
+    //for (auto& o : universe.getObjects()) {
+    for(size_t i = 0; i < universe.getActiveObjects(); ++i) {
+        //if (!o.isActive())
+          //  continue;
+        auto& o = universe.getObjects()[i];
         dc.SetBrush(wxBrush(wxColour(o.getRgb_())));
         //dc.DrawPoint(o.getPos().getX(), o.getPos().getY());
         dc.DrawCircle(o.getPos().getX(), o.getPos().getY(), o.getR());
@@ -59,11 +61,17 @@ struct MassAccessor {
     double operator()(const T& e) const { return e.getMass(); }
 };
 void CLionTestFrame::OnTimer(wxTimerEvent &event) {
-
+    static double lastt = 0;
+    static double lastc = 0;
     double t = tm_.Duration().count() / 1'000'000'000.0;
     universe.advance( t * simulation_f );
     if  (c_ % 25 == 0) {
-        SetStatusText(std::to_string(universe.getNr_()));
+        double delta_t = t - lastt;
+        double delta_c = c_ - lastc;
+        double framerate = delta_c / delta_t;
+        lastt = t;
+        lastc = c_;
+        SetStatusText(std::to_string(universe.getNr_()) + "; FR: " + std::to_string(delta_t));
         //Histogram<decltype(universe.getObjects()), [=]( decltype(universe.getObjects().begin())& e) { return e->getMass(); }> h(200, 100);
         //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, double(decltype(universe.getObjects().begin())&)> h(200, 100);
         //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, MassAccessor<std::remove_reference<decltype(universe.getObjects()[0])>::type>> h(200, 100);

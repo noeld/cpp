@@ -26,7 +26,7 @@ public:
     /// Advance universe using delta time
     /// \param t time delta in seconds or fractions thereof
     /// \returns void
-    void advance(double t);
+    void advance(Planet::float_t t);
 
     /// Get number of active objects
     /// \returns number of active objects
@@ -38,26 +38,32 @@ public:
 
     void Initialize();
 
+    size_t getActiveObjects() const {
+        return activeObjects;
+    }
 private:
     std::vector<Planet> objects_;
+
     size_t activeObjects = 0;
 
+private:
+
     size_t nr_;
-    double   universe_g { 6.6740831e-11 * 100e8 };
-    double   universe_collision_joindist { 0.2 };
-    double   universe_collision_k { 0.5 };
+    Planet::float_t universe_g { 6.6740831e-11 * 100e8 };
+    Planet::float_t universe_collision_joindist { 0.2 };
+    Planet::float_t universe_collision_k { 0.5 };
     unsigned generate_n { 1000 };
-    double   generate_speed_min { 0 };
-    double   generate_speed_max { 5 };
-    double   generate_border_part { 0.05 };
-    double   generate_mass_min { 50 };
-    double   generate_mass_max { 10000 };
-    double   generate_mass_alpha { 0.1 };
-    double   generate_pos_xmax   { 900.0 };
-    double   generate_pos_ymax   { 600.0 };
+    Planet::float_t generate_speed_min { 0 };
+    Planet::float_t generate_speed_max { 5 };
+    Planet::float_t generate_border_part { 0.05 };
+    Planet::float_t generate_mass_min { 50 };
+    Planet::float_t generate_mass_max { 10000 };
+    Planet::float_t generate_mass_alpha { 0.1 };
+    Planet::float_t generate_pos_xmax   { 900.0 };
+    Planet::float_t generate_pos_ymax   { 600.0 };
 
 
-    double   generate_mass_beta  { 9.0 };
+    Planet::float_t   generate_mass_beta  { 9.0 };
 };
 
 

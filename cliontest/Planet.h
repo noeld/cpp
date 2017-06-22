@@ -13,8 +13,10 @@ class PlanetPropertyReaderWriter;
 
 class Planet {
 public:
+    using float_t = double;
+    using vector_t = Vector<float_t>;
     Planet();
-    Planet(const Vector &pos_, const Vector &speed_, double mass_, bool active);
+    Planet(const vector_t &pos_, const vector_t &speed_, float_t mass_, bool active);
     Planet(const Planet&) = default;
     Planet(Planet&&) = default;
     Planet& operator=(const Planet&) = default;
@@ -46,50 +48,50 @@ public:
         return !(*this < rhs);
     }
 
-    Planet& advance(double t) {
+    Planet& advance(float_t t) {
         this->pos_ += this->speed_ * t;
         return *this;
     }
 
-    static double RadiusFromMass(const double& m);
-    static unsigned BlendWeightedRGB(unsigned, double, unsigned, double);
+    static float_t RadiusFromMass(const float_t& m);
+    static unsigned BlendWeightedRGB(unsigned, float_t, unsigned, float_t);
     static void Join(Planet &a, Planet &b);
-    static unsigned Collide(Planet& a, Planet& b, const double& k = 0.05, const double& d = 2.2);
-    const Vector &getPos() const {
+    static unsigned Collide(Planet& a, Planet& b, const float_t& k = 0.05, const float_t& d = 2.2);
+    const vector_t &getPos() const {
 
         return pos_;
     }
 
-    void setPos(const Vector &pos_) {
+    void setPos(const vector_t &pos_) {
         Planet::pos_ = pos_;
     }
 
-    Vector &Speed() {
+    vector_t &Speed() {
         return speed_;
     }
 
-    const Vector &getSpeed() const {
+    const vector_t &getSpeed() const {
         return speed_;
     }
 
-    void setSpeed(const Vector &speed_) {
+    void setSpeed(const vector_t &speed_) {
         Planet::speed_ = speed_;
     }
 
-    double getMass() const {
+    float_t getMass() const {
         return mass_;
     }
 
-    void setMass(double mass_) {
+    void setMass(float_t mass_) {
         Planet::mass_ = mass_;
         r_ = Planet::RadiusFromMass(mass_);
     }
 
-    double getR() const {
+    float_t getR() const {
         return r_;
     }
 
-    void setR(double r_) {
+    void setR(float_t r_) {
         Planet::r_ = r_;
     }
 
@@ -109,14 +111,12 @@ public:
         Planet::rgb_ = rgb_;
     }
 private:
-    Vector pos_;
-    Vector speed_;
-    double mass_ {1.0};
-    double r_;
+    vector_t pos_;
+    vector_t speed_;
+    float_t mass_ {1.0};
+    float_t r_;
     unsigned rgb_{0};
-    static double universe_planet_density;
-
-private:
+    static float_t universe_planet_density;
     bool active {true};
 
     friend class PlanetPropertyReaderWriter;
