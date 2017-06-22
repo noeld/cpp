@@ -13,7 +13,7 @@ class PlanetPropertyReaderWriter;
 
 class Planet {
 public:
-    using float_t = double;
+    using float_t = float;
     using vector_t = Vector<float_t>;
     Planet();
     Planet(const vector_t &pos_, const vector_t &speed_, float_t mass_, bool active);

@@ -5,7 +5,7 @@
 #include "CLionTestFrame.h"
 
 CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) {
-    CreateStatusBar();
+    //CreateStatusBar();
 
     wxMenu* menuA = new wxMenu;
     menuA->Append(ID_Menu_Restart, "&Restart", "Restart univers with new, random setup");
@@ -66,12 +66,14 @@ void CLionTestFrame::OnTimer(wxTimerEvent &event) {
     double t = tm_.Duration().count() / 1'000'000'000.0;
     universe.advance( t * simulation_f );
     if  (c_ % 25 == 0) {
-        double delta_t = t - lastt;
+        double total = tm_.TotalDuration().count() / 1'000'000'000.0;
+        double delta_t = total - lastt;
         double delta_c = c_ - lastc;
         double framerate = delta_c / delta_t;
-        lastt = t;
+        lastt = total;
         lastc = c_;
-        SetStatusText(std::to_string(universe.getNr_()) + "; FR: " + std::to_string(delta_t));
+        this->SetTitle(std::to_string(universe.getNr_()) + "; FR: " + std::to_string(framerate));
+        //SetStatusText();
         //Histogram<decltype(universe.getObjects()), [=]( decltype(universe.getObjects().begin())& e) { return e->getMass(); }> h(200, 100);
         //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, double(decltype(universe.getObjects().begin())&)> h(200, 100);
         //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, MassAccessor<std::remove_reference<decltype(universe.getObjects()[0])>::type>> h(200, 100);
