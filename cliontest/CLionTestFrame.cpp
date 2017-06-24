@@ -49,8 +49,9 @@ void CLionTestFrame::OnPaint(wxPaintEvent &event) {
     //for (auto& o : universe.getObjects()) {
     for(size_t i = 0; i < universe.getActiveObjects(); ++i) {
         //if (!o.isActive())
-          //  continue;
+        //  continue;
         auto& o = universe.getObjects()[i];
+        dc.SetPen(wxColour(o.getRgb_()).ChangeLightness(50));
         dc.SetBrush(wxBrush(wxColour(o.getRgb_())));
         //dc.DrawPoint(o.getPos().getX(), o.getPos().getY());
         dc.DrawCircle(o.getPos().getX(), o.getPos().getY(), o.getR());

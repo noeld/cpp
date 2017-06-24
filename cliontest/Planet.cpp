@@ -32,10 +32,18 @@ unsigned Planet::Collide(Planet &a, Planet &b, const float_t& k, const float_t& 
         return 1;
     }
     auto dist_vec = (a.pos_ - b.pos_);
+    auto dist_length = dist_vec.length();
     dist_vec.normalize();
     if (std::isnan(dist_vec.getX()) || std::isnan(dist_vec.getY())) {
+        // Distance between planets is 0.0
         Planet::Join(a, b);
         return 1;
+    }
+    auto r2 = a.getR() + b.getR() - dist_length;
+    if (r2 > 0) {
+        //Increase distance if planets overlapp
+        a.pos_ += dist_vec * ( r2 * b.getMass() / (a.getMass() + b.getMass()));
+        b.pos_ -= dist_vec * ( r2 * a.getMass() / (a.getMass() + b.getMass()));
     }
     if (dist_vec * speed_delta > 0) {
         // Distance between Planets already increasing
@@ -51,6 +59,7 @@ unsigned Planet::Collide(Planet &a, Planet &b, const float_t& k, const float_t& 
     auto mv1mv2 = direct_force_a * a.mass_ + direct_force_b * b.mass_;
     a.speed_ = ortho_force_a + (mv1mv2 - (direct_force_a - direct_force_b) * (b.mass_ * k)) * ( 1 / (a.mass_ + b.mass_));
     b.speed_ = ortho_force_b + (mv1mv2 - (direct_force_b - direct_force_a) * (a.mass_ * k)) * ( 1 / (a.mass_ + b.mass_));
+
     return 0;
 }
 

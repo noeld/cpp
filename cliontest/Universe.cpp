@@ -25,6 +25,7 @@ void Universe::advance(Planet::float_t t) {
                     if (!objects_[i].isActive()) {
                         --activeObjects;
                         std::swap(objects_[i], objects_[activeObjects]);
+                        //break;
                     } else if (!objects_[j].isActive()) {
                         --activeObjects;
                         std::swap(objects_[j], objects_[activeObjects]);
@@ -37,6 +38,23 @@ void Universe::advance(Planet::float_t t) {
                 objects_[i].Speed() += dir;
             }
         }
+        const Planet::float_t ddd = 100;
+        auto& pos = objects_[i].getPos();
+        auto& speed = objects_[i].getSpeed();
+        Planet::vector_t v;
+        if (pos.getX() < ddd && speed.getX() < 0) {
+            v.setX(t * universe_g * -speed.getX());
+        }
+        if (pos.getX() > generate_pos_xmax - ddd && speed.getX() > 0) {
+            v.setX(t * universe_g * -speed.getX());
+        }
+        if (pos.getY() < ddd && speed.getY() < 0) {
+            v.setY(t * universe_g * -speed.getY());
+        }
+        if (pos.getY() > generate_pos_ymax - ddd && speed.getY() > 0) {
+            v.setY(t * universe_g * -speed.getY());
+        }
+        objects_[i].Speed() += v * 10;
     }
     //for(auto& p : objects_) {
     for(size_t i = 0; i < activeObjects; ++i) {
