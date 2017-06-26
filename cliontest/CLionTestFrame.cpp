@@ -55,6 +55,8 @@ void CLionTestFrame::OnPaint(wxPaintEvent &event) {
         dc.SetBrush(wxBrush(wxColour(o.getRgb_())));
         //dc.DrawPoint(o.getPos().getX(), o.getPos().getY());
         dc.DrawCircle(o.getPos().getX(), o.getPos().getY(), o.getR());
+        dc.SetPen(wxColour(o.getRgb_()).ChangeLightness(150));
+        dc.DrawLine(o.getPos().getX(), o.getPos().getY(), o.getPos().getX() + o.getSpeed().getX(), o.getPos().getY() + o.getSpeed().getY());
     }
 }
 template<class T>

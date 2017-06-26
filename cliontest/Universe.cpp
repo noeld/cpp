@@ -19,7 +19,7 @@ void Universe::advance(Planet::float_t t) {
             auto dir = objects_[j].getPos() - objects_[i].getPos();
             auto dist = dir.length();
             if (dist <= (objects_[j].getR() + objects_[i].getR())) {
-                if (i <j) {
+                if (i < j) {
                     Planet::Collide(objects_[i], objects_[j], this->universe_collision_k,
                                     this->universe_collision_joindist);
                     if (!objects_[i].isActive()) {
