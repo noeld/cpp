@@ -38,7 +38,7 @@ void Universe::advance(Planet::float_t t) {
                 objects_[i].Speed() += dir;
             }
         }
-        const Planet::float_t ddd = 100;
+        const Planet::float_t ddd = -200;
         auto& pos = objects_[i].getPos();
         auto& speed = objects_[i].getSpeed();
         Planet::vector_t v;

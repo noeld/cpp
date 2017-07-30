@@ -4,6 +4,8 @@
 
 #include "CLionTestFrame.h"
 
+#include <boost/format.hpp>
+
 CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) {
     //CreateStatusBar();
 
@@ -32,7 +34,7 @@ CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) 
     prop_.generate_pos_xmax = GetClientSize().x;
     prop_.generate_pos_ymax = GetClientSize().y;
 
-    this->SetBackgroundColour(wxColour(0x33, 0x33, 0x33));
+    this->SetBackgroundColour(wxColour(0x11, 0x11, 0x44));
     Restart();
 }
 
@@ -55,8 +57,8 @@ void CLionTestFrame::OnPaint(wxPaintEvent &event) {
         dc.SetBrush(wxBrush(wxColour(o.getRgb_())));
         //dc.DrawPoint(o.getPos().getX(), o.getPos().getY());
         dc.DrawCircle(o.getPos().getX(), o.getPos().getY(), o.getR());
-        dc.SetPen(wxColour(o.getRgb_()).ChangeLightness(150));
-        dc.DrawLine(o.getPos().getX(), o.getPos().getY(), o.getPos().getX() + o.getSpeed().getX(), o.getPos().getY() + o.getSpeed().getY());
+        //dc.SetPen(wxColour(o.getRgb_()).ChangeLightness(150));
+        //dc.DrawLine(o.getPos().getX(), o.getPos().getY(), o.getPos().getX() + o.getSpeed().getX(), o.getPos().getY() + o.getSpeed().getY());
     }
 }
 template<class T>
@@ -75,7 +77,8 @@ void CLionTestFrame::OnTimer(wxTimerEvent &event) {
         double framerate = delta_c / delta_t;
         lastt = total;
         lastc = c_;
-        this->SetTitle(std::to_string(universe.getNr_()) + "; FR: " + std::to_string(framerate));
+        this->SetTitle(wxString::Format("%d Objekte; %3.1f Frames/Sekunde", universe.getNr_(), framerate));
+        //this->SetTitle(std::to_string(universe.getNr_()) + "; FR: " + std::to_string(static_cast<int>(framerate)));
         //SetStatusText();
         //Histogram<decltype(universe.getObjects()), [=]( decltype(universe.getObjects().begin())& e) { return e->getMass(); }> h(200, 100);
         //Histogram<std::remove_reference<decltype(universe.getObjects())>::type, double(decltype(universe.getObjects().begin())&)> h(200, 100);

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include "Base64.h"
 
 template<typename T>
@@ -41,6 +42,11 @@ int main() {
             auto r = Base64::Encode(s);
             std::cout << r << std::endl;
             std::cout << Base64::Decode(r) << std::endl;
+
+            std::stringstream ss;
+            std::ostream_iterator<char> oi(ss);
+            Base64::EncodeIt(s.begin(), s.end(), oi);
+            std::cout << "EncodeIT: " << ss.str() << std::endl;
         }
     } catch(const char* e) {
         std::cerr << e << std::endl;
