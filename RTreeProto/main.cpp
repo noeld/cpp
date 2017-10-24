@@ -115,6 +115,7 @@ struct RTree
 
 		size_t size_ {0};
 		INode* parent_;
+		Rect outline_;
 	};
 	struct LeafNode;
 	struct IndexNode;
@@ -131,6 +132,8 @@ struct RTree
 		//virtual void add(const value_type& r)  =0;
 		virtual INode* parent() =0;
 		virtual LeafNode* first_leaf(size_t* depth) =0;
+		virtual bool is_full() const { return size() == RTree::max_node_size; }
+		virtual const Rect& outline() const =0;
 		//virtual std::unique_ptr<INode> clone() =0;
 	};
 	struct IndexNode : public NodeBase, public INode {
@@ -138,8 +141,6 @@ struct RTree
 		explicit IndexNode(INode* parent) : NodeBase(parent)
 		{}
 		virtual ~IndexNode() = default;
-		using NodeBase::size_;
-		using NodeBase::parent_;
 		virtual INode* parent() override { return parent_; }
 		virtual size_t size() const override { return size_; }
 		friend class AbstractOperation;
@@ -151,9 +152,14 @@ struct RTree
 				++(*depth);
 			return std::get<1>(elements_[0])->first_leaf(depth); 
 		}
-		virtual const Rect& outline() const { return outline_; }
+		virtual const Rect& outline() const override { return outline_; }
+		virtual bool is_full() const override { return size_ == elements_.size(); }
+
+		using NodeBase::size_;
+		using NodeBase::parent_;
+		using NodeBase::outline_;
 		std::array<IndexNode::value_type, RTree::max_node_size> elements_;
-		Rect outline_;
+		
 	};
 	struct LeafNode : public NodeBase, public INode {
 		explicit LeafNode(INode* parent) : NodeBase(parent) 
@@ -166,26 +172,45 @@ struct RTree
 		friend class AbstractOperation;
 		virtual void accept(AbstractOperation& a) override { a.visit(*this); }
 		virtual LeafNode* first_leaf(size_t* depth) override { return this; }
+		virtual const Rect& outline() const override { return outline_; }
+		virtual bool is_full() const override { return size_ == elements_.size(); }
 		std::array<RTree::value_type, RTree::max_node_size> elements_;
 	};
 	struct AddOperation : public AbstractOperation {
-		explicit AddOperation(RTree::value_type& v, RTIterator& it) 
+		explicit AddOperation(const RTree::value_type& v, RTIterator& it) 
 		: value_(v), it_(it)
 		{}
 		virtual void visit(IndexNode& n) {
 			// TODO
+			// choose sub tree
+			// if it contains value_ rect
+			// or choose the subtree which needs the least enlargement
+			vector<std::pair<float, INode*>> heap;
+			for(const auto& e : n.elements_) {
+				auto area = e.first.area();
+				auto enlarged_rect = Rect::combination(e.first, value_.first);
+				float enlargement = static_cast<float>(enlarged_rect.area()) / (area > 0 ? area : 1);
+				std::push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
+			}
+
+			// update outline
+			n.outline_ = Rect::combination(n.outline_, it_.current_node_->outline_);
 		}
 		virtual void visit(LeafNode& n) {
-			if (n.size() < n.elements_.size()) {
-				n.elements_[n.size()] =value_;
-				n.size_++;
-				//n.outline_ = Rect::combination(n.outline_, std::get<0>(value_));
-			} else {
+			if (n.is_full()) {
 				// TODO split node
+			} else {
+				// insert here
+				n.elements_[n.size()] =value_;
+				it_.current_node_ = &n;
+				it_.itstack_.push_back(n.size());
+				n.size_++;
+				// TODO n.outline_ = Rect::combination(n.outline_, std::get<0>(value_));
+				n.outline_ = Rect::combination(n.outline(), value_.first);
 			}
 		}
 		RTIterator& it_;
-		RTree::value_type& value_;
+		const RTree::value_type& value_;
 	};
 	using FindResult = std::vector<RTree::value_type>;
 	struct FindExactOperation : public AbstractOperation {
@@ -268,7 +293,12 @@ struct RTree
 	RTIterator begin();
 	RTIterator end() { return RTIterator(); }
 
-	RTIterator add(const Rect& r);
+	RTIterator add(const value_type& r) {
+		RTIterator it;
+		AddOperation ao(r, it);
+		root_->accept(ao);
+		return it;
+	}
 	FindResult find_containing(const Point& p) {
 		FindExactOperation feo(p);
 		root_->accept(feo);
