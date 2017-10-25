@@ -67,6 +67,7 @@ struct Rect final
 	Rect(const Rect&) noexcept = default;
 	~Rect() noexcept = default;
 	Rect& operator=(const Rect& r) noexcept = default;
+	bool operator==(const Rect& r) const noexcept { return std::tie(p1_, p2_) == std::tie(r.p1_, r.p2_); }
 	bool contains(const Point& p) const noexcept {
 		return p1_.is_top_left(p) && p.is_top_left(p2_);
 	}
@@ -120,7 +121,6 @@ struct RTree
 	struct LeafNode;
 	struct IndexNode;
 	struct AbstractOperation {
-		virtual ~AbstractOperation() =0;
 		virtual void visit(IndexNode& n) =0;
 		virtual void visit(LeafNode& n) =0;
 	};
@@ -185,12 +185,18 @@ struct RTree
 			// choose sub tree
 			// if it contains value_ rect
 			// or choose the subtree which needs the least enlargement
-			vector<std::pair<float, INode*>> heap;
+			heap_.reserve(n.elements_.size());
+			heap_.resize(0);
+			static auto comp = [](const decltype(heap_)::value_type& a, const decltype(heap_)::value_type& b) -> bool {
+				return a.first < b.first;
+			};
 			for(const auto& e : n.elements_) {
 				auto area = e.first.area();
 				auto enlarged_rect = Rect::combination(e.first, value_.first);
 				float enlargement = static_cast<float>(enlarged_rect.area()) / (area > 0 ? area : 1);
-				std::push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
+				std::push_heap(heap_.begin(), heap_.end(), comp);
+				if (e.first == enlarged_rect)
+					break;
 			}
 
 			// update outline
@@ -211,6 +217,7 @@ struct RTree
 		}
 		RTIterator& it_;
 		const RTree::value_type& value_;
+		std::vector<std::pair<float, INode*>> heap_;
 	};
 	using FindResult = std::vector<RTree::value_type>;
 	struct FindExactOperation : public AbstractOperation {
@@ -321,5 +328,23 @@ int main(int argc, char const *argv[])
 	for(const auto& p : params) {
 		std::cout << p << std::endl;
 	}
+	size_t counter = 0;
+	rt.add(std::make_pair(Rect(Point(1, 1), Point(2, 2)), ++counter));
+	rt.add(std::make_pair(Rect(Point(1, 2), Point(2, 2)), ++counter));
+	rt.add(std::make_pair(Rect(Point(1, 3), Point(9, 2)), ++counter));
+	rt.add(std::make_pair(Rect(Point(2, 1), Point(4, 7)), ++counter));
+	rt.add(std::make_pair(Rect(Point(3, 1), Point(4, 7)), ++counter));
+	rt.add(std::make_pair(Rect(Point(4, 1), Point(7, 2)), ++counter));
+	rt.add(std::make_pair(Rect(Point(4, 4), Point(9, 8)), ++counter));
+	rt.add(std::make_pair(Rect(Point(5, 1), Point(9, 9)), ++counter));
+	rt.add(std::make_pair(Rect(Point(5, 4), Point(6, 5)), ++counter));
+	rt.add(std::make_pair(Rect(Point(6, 1), Point(6, 6)), ++counter));
+	rt.add(std::make_pair(Rect(Point(6, 6), Point(7, 7)), ++counter));
+	rt.add(std::make_pair(Rect(Point(1, 1), Point(7, 7)), ++counter));
+	rt.add(std::make_pair(Rect(Point(8, 4), Point(9, 5)), ++counter));
+	rt.add(std::make_pair(Rect(Point(2, 5), Point(4, 6)), ++counter));
+	rt.add(std::make_pair(Rect(Point(2, 6), Point(6, 7)), ++counter));
+	rt.add(std::make_pair(Rect(Point(2, 7), Point(9, 7)), ++counter));
+	rt.add(std::make_pair(Rect(Point(2, 8), Point(8, 9)), ++counter));
 	return 0;
 }
