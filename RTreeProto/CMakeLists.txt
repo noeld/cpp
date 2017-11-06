@@ -1,6 +1,9 @@
 #cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" ..
 #cmake --build .
 cmake_minimum_required(VERSION 3.6)
+
+add_subdirectory(protoindexstring)
+
 project(RTreeProto)
 
 set(CMAKE_CXX_STANDARD 14)
