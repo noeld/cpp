@@ -15,10 +15,10 @@ use constant {MAXX => 1000000, MAXY => 100};
 # A reansonable programm will need 1000 of these strucutres
 # * memory efficiency
 # * the 
-
-my ($x, $y) = (100, 100);
+my $rect_orig = [0, 0, MAXX, MAXY];
+my $rect_dst = [0, 0, 15, 19];
 my @a;
-$#a = $x * $y;
+$#a = rect_width($rect_dst) * rect_height($rect_dst);
 
 sub min {
 	$_[0] < $_[1] ? $_[0] : $_[1];
@@ -56,8 +56,6 @@ sub scale_rect {
 		, min(ceil ($y2), $$rect_dst[3])
 	];
 }
-my $rect_orig = [0, 0, MAXX, MAXY];
-my $rect_dst = [0, 0, 15, 19];
 sub scale_coords {
 	my ($rect_orig, $rect_dst, $x, $y) = @_;
 	my $w1 = rect_width($rect_orig);
@@ -71,18 +69,22 @@ sub scale_coords {
 }
 sub array_index_for_coords {
 	my ($x, $y) = @_;
-	return $y * rect_height($rect_dst) + $x ;
+	return $y * rect_width($rect_dst) + $x ;
 }
 my @rects;
 my %combinations; # by joined string => index
 my %inverse_combinations; # index => joined string
 
 sub combinations_for_index {
-	my ($index) = @_;
-	if ($index < @rects)
-		return ($index);
+	my ($index, $emptyifnone) = @_;
+	$emptyifnone = 0 unless defined($emptyifnone);
+	return ($index) if ($index < @rects);
 	unless(exists($inverse_combinations{$index})) {
-		die "Cannot find index $index";
+		if ($emptyifnone) {
+			return ();
+		} else {
+			die "Cannot find index $index";
+		}
 	}
 	my $comb = $inverse_combinations{$index};
 	return split(',', $comb);
@@ -119,7 +121,11 @@ sub index_for_combination {
 	}
 	return $combinations{$key};
 }
-for my $n (1..4) {
+
+# Generate random_n random rects within $rect_orig
+# Map rects to $rect_dst
+my $random_n = 4;
+for my $n (1..$random_n) {
 	my $r = random_rect(MAXX, MAXY);
 	push @rects, $r;
 	my $r2 = scale_rect($rect_orig, $rect_dst, $r);
@@ -132,11 +138,25 @@ for my $n (1..4) {
 	}
 }
 
+# Print scaled rect
 for (my $y = 0; $y <= $$rect_dst[3]; ++$y ) {
 	for (my $x = 0; $x <= $$rect_dst[2]; ++$x) {
 		my $index = array_index_for_coords($x, $y);
-		printf(".%-4s", $a[ $index ]);
+		printf(".%-${random_n}s", $a[ $index ]);
 	}
 	printf("\n");
 }
 
+# Lookup some random points and print the orignial rects which contain then
+print 'Max Index:', $#a, "\n";
+for (1..10) {
+	my $pt_orig = [random(MAXX), random(MAXY)];
+	print "Orig ($$pt_orig[0], $$pt_orig[1]) ";
+	my @pt_dst = scale_coords($rect_orig, $rect_dst, @$pt_orig);
+	print "Dst ($pt_dst[0], $pt_dst[1]) ";
+	my $dst_idx = array_index_for_coords(map {int} @pt_dst);
+	print " Index $dst_idx";
+	my $idx = $a[$dst_idx];
+	print " Comb: ", join(', ', split(//, $idx));
+	print "\n";
+}
