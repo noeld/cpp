@@ -28,3 +28,5 @@
 *.app
 
 generator/Testgenerator.dSYM/Contents/Resources/DWARF/Testgenerator
+# build folders
+cmake-build-*
