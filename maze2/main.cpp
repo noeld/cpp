@@ -168,8 +168,8 @@ namespace maze2 {
                 e.dir <<= 1;
                 if (e.dir > WEST)
                     e.dir = NORTH;
-            } while(e.cnt < 4 && m.Visited(pn.SetPos(e.pos).MoveDir(e.dir)));
-            if (e.cnt >= 4) {
+            } while(e.cnt < 5 && m.Visited(pn.SetPos(e.pos).MoveDir(e.dir)));
+            if (e.cnt >= 5) {
                 st.pop();
             } else {
                 m.SetVisited(pn);
@@ -209,7 +209,7 @@ std::ostream& operator<<(std::ostream& o, const maze2::Maze& m) {
 using namespace std;
 
 int main(int argn, char* argv[]) {
-    maze2::pos_t x = 15, y = 10;
+    maze2::pos_t x = 7, y = 3;
     if (argn > 1) {
         x = stoul(argv[1]);
     }
