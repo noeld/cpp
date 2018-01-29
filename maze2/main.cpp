@@ -7,7 +7,7 @@
 
 namespace maze2 {
 
-    using pos_t = uint16_t;
+    using pos_t = uint32_t;
     using dir_t = uint8_t;
     constexpr const dir_t NORTH = 1 << 0;
     constexpr const dir_t EAST  = 1 << 1;
@@ -95,7 +95,10 @@ namespace maze2 {
     class Maze final {
     public:
         Maze(const pos_t maxx, const pos_t maxy) : maxx_(maxx), maxy_(maxy), p_(Size(), NORTH | EAST)
-        {}
+        {
+            if ((maxx_ * maxy_) == 0)
+                throw "Not a valid maze layout";
+        }
         ~Maze() =default;
         void Initialize() {
             for(auto& e : p_) {
@@ -209,7 +212,7 @@ std::ostream& operator<<(std::ostream& o, const maze2::Maze& m) {
 using namespace std;
 
 int main(int argn, char* argv[]) {
-    maze2::pos_t x = 7, y = 3;
+    maze2::pos_t x = 7, y = 0;
     if (argn > 1) {
         x = stoul(argv[1]);
     }
@@ -224,10 +227,17 @@ int main(int argn, char* argv[]) {
 //    cout << "RemoveWall(3, WEST)" << endl;
 //    m.RemoveWall(3, maze2::WEST);
 //    cout << m;
-    maze2::Maze mm(x, y);
-    //cout << mm << endl;
-    maze2::RandomizeMaze(mm);
-    cout << mm << endl;
-    cout.flush();
+    try {
+        maze2::Maze mm(x, y);
+        //cout << mm << endl;
+        maze2::RandomizeMaze(mm);
+        cout << mm << endl;
+        cout.flush();
+    } catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << endl;
+    } catch (const char* e) {
+        std::cerr << "Exception*: " << e << endl;
+    }
+
     return 0;
 }
