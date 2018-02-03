@@ -8,36 +8,36 @@
 
 namespace maze2 {
 
-//    int GetEncoderClsid(const WCHAR *format, CLSID *pClsid) {
-//        using namespace Gdiplus;
-//        using Gdiplus::DllExports::GdipGetImageEncoders;
-//        using Gdiplus::DllExports::GdipGetImageEncodersSize;
-//        UINT num = 0;          // number of image encoders
-//        UINT size = 0;         // size of the image encoder array in bytes
-//
-//        ImageCodecInfo *pImageCodecInfo = NULL;
-//
-//        GetImageEncodersSize(&num, &size);
-//        if (size == 0)
-//            return -1;  // Failure
-//
-//        pImageCodecInfo = (ImageCodecInfo * )(malloc(size));
-//        if (pImageCodecInfo == NULL)
-//            return -1;  // Failure
-//
-//        GetImageEncoders(num, size, pImageCodecInfo);
-//
-//        for (UINT j = 0; j < num; ++j) {
-//            if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0) {
-//                *pClsid = pImageCodecInfo[j].Clsid;
-//                free(pImageCodecInfo);
-//                return j;  // Success
-//            }
-//        }
-//
-//        free(pImageCodecInfo);
-//        return -1;  // Failure
-//    }
+    int GetEncoderClsid(const WCHAR *format, CLSID *pClsid) {
+        using namespace Gdiplus;
+        using Gdiplus::DllExports::GdipGetImageEncoders;
+        using Gdiplus::DllExports::GdipGetImageEncodersSize;
+        UINT num = 0;          // number of image encoders
+        UINT size = 0;         // size of the image encoder array in bytes
+
+        ImageCodecInfo *pImageCodecInfo = NULL;
+
+        GetImageEncodersSize(&num, &size);
+        if (size == 0)
+            return -1;  // Failure
+
+        pImageCodecInfo = (ImageCodecInfo * )(malloc(size));
+        if (pImageCodecInfo == NULL)
+            return -1;  // Failure
+
+        GetImageEncoders(num, size, pImageCodecInfo);
+
+        for (UINT j = 0; j < num; ++j) {
+            if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0) {
+                *pClsid = pImageCodecInfo[j].Clsid;
+                free(pImageCodecInfo);
+                return j;  // Success
+            }
+        }
+
+        free(pImageCodecInfo);
+        return -1;  // Failure
+    }
 
     void saveBitmap( std::string path, HBITMAP bmp, HDC hdc )
     {
@@ -74,6 +74,25 @@ namespace maze2 {
         CloseHandle( file );
 
         delete [] dwpBits;
+
+//        {
+//            // Test GDI+
+//            using namespace Gdiplus;
+//
+//            GdiplusStartupInput gdiplusStartupInput;
+//            ULONG_PTR           gdiplusToken;
+//
+//            // Initialize GDI+.
+//            GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+//
+//            CLSID clsid;
+//            GetEncoderClsid(L"image/png", &clsid);
+//
+//            Bitmap gdibmp(bmp, NULL);
+//            gdibmp.Save(path.data(), clsid);
+//
+//            GdiplusShutdown(gdiplusToken);
+//        }
     }
 
 }
@@ -99,7 +118,7 @@ bool maze2::RenderBitmap(const maze2::Maze &m, const size_t cellsize, DWORD pens
     ReleaseDC(GetConsoleWindow(), dc);
 
     memset(pBits, 0xff, bmpWidth * bmpHeight * sizeof(DWORD));
-    const DWORD clr = RGB(0x0, 0x0, 0x0);
+    const DWORD clr = RGB(0x66, 0x00, 0x66);
     HPEN hpen = CreatePen(PS_SOLID, pensize, clr);
     SelectObject(hdc, hpen);
 
@@ -132,8 +151,8 @@ bool maze2::RenderBitmap(const maze2::Maze &m, const size_t cellsize, DWORD pens
         }
     }
 
-    ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
-    BitBlt(GetDC(GetConsoleWindow()), 20, 60, bmpWidth, bmpHeight, hdc, 0, 0, SRCCOPY);
+    //ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
+    //BitBlt(GetDC(GetConsoleWindow()), 20, 60, bmpWidth, bmpHeight, hdc, 0, 0, SRCCOPY);
 
     std::string filename = prefix + "_" + std::to_string(m.Width()) + "x" + std::to_string(m.Height()) + ".bmp";
     maze2::saveBitmap(filename, hbmp, hdc);

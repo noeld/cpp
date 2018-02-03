@@ -42,7 +42,7 @@ int main(int argn, char* argv[]) {
         //cout << mm << endl;
         maze2::RandomizeMaze(mm);
         std::vector<maze2::pos_t> way;
-        maze2::pos_t p1 = 0, p2 = mm.Size() / 2, p3 = mm.Size() - 1;
+        maze2::pos_t p1 = 0, p2 = mm.Size() / 2 + mm.Width() / 2, p3 = mm.Size() - 1;
         bool connected  = maze2::ShortestPath(mm, p1, p2, way);
         bool connected2 = maze2::ShortestPath(mm, p2, p3, way);
         if (connected && connected2) {
@@ -53,6 +53,9 @@ int main(int argn, char* argv[]) {
                     mm.SetMarked(e);
             }
             cout << endl;
+            mm.SetMarked(p1);
+            mm.SetMarked(p2);
+            mm.SetMarked(p3);
         } else {
             cout << p1 << ", " << p2 << ", and " << p3 << " are not connected." << endl;
         }
