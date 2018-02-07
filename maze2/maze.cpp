@@ -5,36 +5,44 @@
 #include "maze.h"
 #include <chrono>
 #include <queue>
+#include <array>
 #include <algorithm>
 
 void maze2::RandomizeMaze(maze2::Maze &m) {
-    struct StackItem { pos_t pos {0}; dir_t dir {NORTH}; uint8_t cnt {0}; };
+    struct StackItem {
+        StackItem(maze2::pos_t pos) : pos_{pos} {
+            std::random_shuffle(dir_.begin(), dir_.end());
+        }
+        maze2::dir_t Dir() const { return dir_[cnt]; }
+        bool HasMore() const noexcept { return cnt < 4; }
+        StackItem& operator++() noexcept { ++cnt; return *this; }
+        maze2::pos_t pos_;
+        std::array<dir_t, 4> dir_ { maze2::NORTH, maze2::EAST, maze2::SOUTH, maze2::WEST};
+        uint8_t cnt {0};
+    };
     unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
     std::mt19937 rd (seed1);
-    std::uniform_int_distribution<uint8_t> id(0, 3);
+    //std::uniform_int_distribution<uint8_t> id(0, 3);
     std::uniform_int_distribution<pos_t> sd(0, m.Size() - 1);
     std::stack<StackItem> st;
     PosNavigator pn(m.Width(), m.Height());
     auto start = sd(rd);
     m.SetVisited(start);
-    dir_t firstdir = (1 << id(rd));
-    st.push({start, firstdir, 0});
+    //dir_t firstdir = (1 << id(rd));
+    st.push({start});
     size_t maxsd = st.size();
     do {
         auto& e = st.top();
-        do {
-            ++e.cnt;
-            e.dir <<= 1;
-            if (e.dir > WEST)
-                e.dir = NORTH;
-        } while(e.cnt < 5 && m.Visited(pn.SetPos(e.pos).MoveDir(e.dir)));
-        if (e.cnt >= 5) {
+        while(e.HasMore() && m.Visited(pn.SetPos(e.pos_).MoveDir(e.Dir()))) {
+            ++e;
+        }
+        if (!e.HasMore()) {
             st.pop();
         } else {
             m.SetVisited(pn);
-            m.RemoveWall(e.pos, e.dir);
-            dir_t firstdir = (1 << id(rd));
-            st.push({pn, firstdir, 0});
+            m.RemoveWall(e.pos_, e.Dir());
+            //dir_t firstdir = (1 << id(rd));
+            st.push({pn});
             maxsd = std::max(maxsd, st.size());
         }
     } while(!st.empty());

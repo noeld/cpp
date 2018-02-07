@@ -141,7 +141,7 @@ bool maze2::RenderBitmap(const maze2::Maze &m, const size_t cellsize, DWORD pens
     return true;
 }
 
-bool maze2::RenderBitmapGDIP(const maze2::Maze &m, const int cellsize, int pensize, int padding, std::wstring filename) {
+bool maze2::RenderBitmapGDIP(const maze2::Maze &m, const MazeDrawParams& params, std::wstring filename) {
     // Test GDI+
     using namespace Gdiplus;
 
@@ -154,35 +154,37 @@ bool maze2::RenderBitmapGDIP(const maze2::Maze &m, const int cellsize, int pensi
     CLSID clsid;
     GetEncoderClsid(L"image/png", &clsid);
 
-    const LONG bmpWidth        = cellsize * m.Width()  + pensize + 2 * padding;
-    const LONG bmpHeight       = cellsize * m.Height() + pensize + 2 * padding;
+    const LONG bmpWidth        = params.cellsize * m.Width()  + params.pensize + 2 * params.padding;
+    const LONG bmpHeight       = params.cellsize * m.Height() + params.pensize + 2 * params.padding;
     {
         Bitmap bmp(bmpWidth, bmpHeight, PixelFormat24bppRGB);
         Graphics g(&bmp);
 
         g.Clear(Color(0xff, 0xff, 0xff));
-        Pen p(Color(0x00, 0x33, 0x33), 2.0);
+        Pen p(Color(params.pen.r, params.pen.g, params.pen.b), params.pensize);
         PosNavigator pn(m.Width(), m.Height());
         for (maze2::pos_t y = 0; y < m.Height(); ++y) {
-            int py = cellsize * y + padding;
+            int py = params.cellsize * y + params.padding;
             for (maze2::pos_t x = 0; x < m.Width(); ++x) {
-                int px = cellsize * x + padding;
+                int px = params.cellsize * x + params.padding;
                 auto pos = pn.ConvertToPos(x, y);
                 if (m.HasWall(pos, maze2::NORTH)) {
-                    g.DrawLine(&p, px, py, px + cellsize, py);
+                    g.DrawLine(&p, px, py, px + params.cellsize, py);
                 }
                 if (m.HasWall(pos, maze2::EAST)) {
-                    g.DrawLine(&p, px + cellsize, py, px + cellsize, py + cellsize);
+                    g.DrawLine(&p, px + params.cellsize, py, px + params.cellsize, py + params.cellsize);
                 }
                 if (m.HasWall(pos, maze2::SOUTH)) {
-                    g.DrawLine(&p, px, py + cellsize, px + cellsize, py + cellsize);
+                    g.DrawLine(&p, px, py + params.cellsize, px + params.cellsize, py + params.cellsize);
                 }
                 if (m.HasWall(pos, maze2::WEST)) {
-                    g.DrawLine(&p, px, py, px, py + cellsize);
+                    g.DrawLine(&p, px, py, px, py + params.cellsize);
                 }
                 if (m.Marked(pos)) {
-                    g.DrawEllipse(&p, px + cellsize / 2 - pensize / 2, py + cellsize / 2 - pensize / 2, pensize,
-                                  pensize);
+                    g.DrawEllipse(&p, px + params.cellsize / 2 - params.pensize / 2
+                            , py + params.cellsize / 2 - params.pensize / 2
+                            , params.pensize
+                            , params.pensize);
                 }
             }
         }
