@@ -61,7 +61,8 @@ int main(int argn, char* argv[]) {
         }
         cout << mm << endl;
         cout.flush();
-        maze2::RenderBitmap(mm, cellsize, pen, padding);
+        std::wstring filename = L"maze2_" + std::to_wstring(mm.Width()) + L"x" + std::to_wstring(mm.Height()) + L".png";
+        maze2::RenderBitmapGDIP(mm, cellsize, pen, padding);
     } catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << endl;
     } catch (const char* e) {
