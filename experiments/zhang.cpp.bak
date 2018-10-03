@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <valarray>
+//#include <bitset>
 const std::string input {
 "................................"
 ".#########.......########......."
@@ -47,15 +48,14 @@ public:
     static const pixel_t WHITE_PIX;
 
     Image(unsigned width = 1, unsigned height = 1) 
-    : width_{width}, height_{height}, data_( '\0', width_ * height_)
+    : width_{width}, height_{height}, data_( WHITE_PIX, width_ * height_)
     {}
     Image(const Image& i) : width_{ i.width_}, height_{i.height_}, data_{i.data_}
-    {std::cout << __func__ << "(&)" << std::endl;}
+    {}
     Image(Image&& i) : width_{ i.width_}, height_{i.height_}, data_{std::move(i.data_)}
-    {std::cout << __func__ << "(&&)" << std::endl; }
+    {}
     ~Image() = default;
     Image& operator=(const Image& i) {
-        std::cout << __func__ << "(&)" << std::endl;
         if (this != &i) {
             width_ = i.width_;
             height_ = i.height_;
@@ -64,7 +64,6 @@ public:
         return *this;
     }
     Image& operator=(Image&& i) {
-        std::cout << __func__ << "(&&)" << std::endl;
         if (this != &i) {
             width_ = i.width_;
             height_ = i.height_;
@@ -80,7 +79,7 @@ public:
         o << i.width_ << " x " << i.height_ << std::endl;
         size_t px = 0;
         for(const auto& e : i.data_) {
-            o << (e?Image::BLACK_PIX:Image::WHITE_PIX);
+            o << e;
             if (++px % i.width_ == 0)
                 o << std::endl;
         }
@@ -89,12 +88,10 @@ public:
     friend std::istream& operator>>(std::istream& in, Image& img) {
         auto it = std::begin(img.data_);
         const auto end = std::end(img.data_);
-        Image::pixel_t tmp;
         while(in && it != end) {
-            in >> tmp;
-            if (tmp != Image::BLACK_PIX && tmp != Image::WHITE_PIX)
+            in >> *it;
+            if (*it != Image::BLACK_PIX && *it != Image::WHITE_PIX)
                 throw "Bad character found in image";
-            *it = (tmp == Image::BLACK_PIX)?1:0;
             ++it;
         }
         return in;
@@ -145,28 +142,28 @@ public:
     // the number of transitions from white to black, (0 -> 1) in the sequence P2,P3,P4,P5,P6,P7,P8,P9,P2
     unsigned transitions_white_black(const Image::Neighbours& a) const {
         unsigned sum = 0;
-        sum += (a.p9() == 0) && a.p2();
-        sum += (a.p2() == 0) && a.p3();
-        sum += (a.p3() == 0) && a.p4();
-        sum += (a.p8() == 0) && a.p9();
-        sum += (a.p4() == 0) && a.p5();
-        sum += (a.p7() == 0) && a.p8();
-        sum += (a.p6() == 0) && a.p7();
-        sum += (a.p5() == 0) && a.p6();
+        sum += ((a.p9() == Image::WHITE_PIX) && (a.p2() == Image::BLACK_PIX))?1:0;
+        sum += ((a.p2() == Image::WHITE_PIX) && (a.p3() == Image::BLACK_PIX))?1:0;
+        sum += ((a.p3() == Image::WHITE_PIX) && (a.p4() == Image::BLACK_PIX))?1:0;
+        sum += ((a.p8() == Image::WHITE_PIX) && (a.p9() == Image::BLACK_PIX))?1:0;
+        sum += ((a.p4() == Image::WHITE_PIX) && (a.p5() == Image::BLACK_PIX))?1:0;
+        sum += ((a.p7() == Image::WHITE_PIX) && (a.p8() == Image::BLACK_PIX))?1:0;
+        sum += ((a.p6() == Image::WHITE_PIX) && (a.p7() == Image::BLACK_PIX))?1:0;
+        sum += ((a.p5() == Image::WHITE_PIX) && (a.p6() == Image::BLACK_PIX))?1:0;
         return sum;
     }
 
     // The number of black pixel neighbours of P1. ( = sum(P2 .. P9) )
     unsigned black_pixels(const Image::Neighbours& a) const {
         unsigned sum = 0;
-        sum += a.p9();
-        sum += a.p2();
-        sum += a.p3();
-        sum += a.p8();
-        sum += a.p4();
-        sum += a.p7();
-        sum += a.p6();
-        sum += a.p5();
+        sum += (a.p9() == Image::BLACK_PIX)?1:0;
+        sum += (a.p2() == Image::BLACK_PIX)?1:0;
+        sum += (a.p3() == Image::BLACK_PIX)?1:0;
+        sum += (a.p8() == Image::BLACK_PIX)?1:0;
+        sum += (a.p4() == Image::BLACK_PIX)?1:0;
+        sum += (a.p7() == Image::BLACK_PIX)?1:0;
+        sum += (a.p6() == Image::BLACK_PIX)?1:0;
+        sum += (a.p5() == Image::BLACK_PIX)?1:0;
         return sum;
     }
     const Image& operator()(const Image& img) {
@@ -178,42 +175,44 @@ public:
             tmp_b_ = tmp_a_;
             for(size_t y = 1; y < tmp_a_.height() - 1; ++y) {
                 for(size_t x = 1; x < tmp_a_.width() - 1; ++x) {
-                    if (tmp_a_.data_[tmp_a_.idx(x, y)]) {
+                    if (tmp_a_.data_[tmp_a_.idx(x, y)] == Image::BLACK_PIX) {
                         auto n = tmp_a_.neighbours(x, y);
                         auto bp = black_pixels(n);
                         if (bp >= 2 && bp <= 6) {
                             auto tr = transitions_white_black(n);
                             if (    tr == 1 
-                                && (n.p2() * n.p4() * n.p6() == 0)
-                                && (n.p4() * n.p6() * n.p8() == 0)
+                                && (n.p2() == Image::WHITE_PIX || n.p4() == Image::WHITE_PIX || n.p6() == Image::WHITE_PIX)
+                                && (n.p4() == Image::WHITE_PIX || n.p6() == Image::WHITE_PIX || n.p8() == Image::WHITE_PIX)
                                 ) {
-                                tmp_b_.data_[n.p1_] = 0;
+                                tmp_b_.data_[n.p1_] = Image::WHITE_PIX;
                                 ++changed_pixels;
                             }
                         }
                     } 
                 }
             }
+            // std::cout << "Step 1" << std::endl << tmp_b_ << std::endl;
             // Step 2
             tmp_a_ = tmp_b_;
             for(size_t y = 1; y < tmp_b_.height() - 1; ++y) {
                 for(size_t x = 1; x < tmp_b_.width() - 1; ++x) {
-                    if (tmp_b_.data_[tmp_b_.idx(x, y)]) {
+                    if (tmp_b_.data_[tmp_b_.idx(x, y)] == Image::BLACK_PIX) {
                         auto n = tmp_b_.neighbours(x, y);
                         auto bp = black_pixels(n);
                         if (bp >= 2 && bp <= 6) {
                             auto tr = transitions_white_black(n);
                             if (    tr == 1 
-                                && (n.p2() * n.p4() * n.p8() == 0)
-                                && (n.p2() * n.p6() * n.p8() == 0)
+                                && (n.p2() == Image::WHITE_PIX || n.p4() == Image::WHITE_PIX || n.p8() == Image::WHITE_PIX)
+                                && (n.p2() == Image::WHITE_PIX || n.p6() == Image::WHITE_PIX || n.p8() == Image::WHITE_PIX)
                                 ) {
-                                tmp_a_.data_[n.p1_] = 0;
+                                tmp_a_.data_[n.p1_] = Image::WHITE_PIX;
                                 ++changed_pixels;
                             }
                         }
                     } 
                 }
             }
+            // std::cout << "Step 2" << std::endl << tmp_a_ << std::endl;
         } while(changed_pixels > 0);
         return tmp_a_;
     }
@@ -238,7 +237,7 @@ int main(int argc, char const *argv[])
     istringstream iss2{input2};
     iss2 >> img2;
     cout << img2;
-    cout << "ZhangSuen with big image" << endl;
+    cout << "ZhangSuen" << endl;
     Image res2 = std::move(zs(img2));
     cout << res2 << endl;
     return 0;

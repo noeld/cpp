@@ -26,3 +26,21 @@ add_executable(gamma gamma.cpp)
 add_executable(printbits printbits.cpp) 
 
 add_executable(zhang zhang.cpp) 
+
+find_package(SDL2 REQUIRED)
+# find_package(CAIRO REQUIRED)
+
+include_directories(${SDL2_INCLUDE_DIRS})
+
+add_executable(sdltest sdltest.cpp)
+target_link_libraries(sdltest ${SDL2_LIBRARIES})
+target_link_libraries(sdltest cairo)
+
+find_package(Boost REQUIRED)
+add_executable(indexfile indexfile.cpp)
+target_link_libraries(indexfile ${BOOST_LIBRARIES})
+
+add_executable(rtree rtree.cpp)
+target_link_libraries(rtree ${BOOST_LIBRARIES})
+
+add_executable(areagrid areagrid.cpp)
