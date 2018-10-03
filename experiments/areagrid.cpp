@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <tuple>
+#include <boost/format.hpp>
 
 struct EquiDistRange {
     EquiDistRange(int min, int max, int divisions)
@@ -283,17 +284,28 @@ const VRectGrid::set_t& VRectGrid::operator()(const Point& p) {
 const VRectGrid::set_t& VRectGrid::operator()(int x, int y) {
   return this->operator()(Point{x, y});
 }
+std::ostream& operator<<(std::ostream& o, VRectGrid& g) {
+  boost::format fmt{"%3d"};
+  for(int y = g.scale_.height_ + 1; y >= 0; --y) {
+    for(int x = 0; x <= g.scale_.width_ + 1; ++x) {
+      auto s = g(x, y).size();
+      std::cout << fmt % s << " ";
+    }
+    std::cout << std::endl;
+  }
+  return o;
+}
 
 int main() {
   using namespace std;
-  std::array<VRect, 20> rs;
+  std::array<VRect, 2000> rs;
   Randomizer rnd;
   int idx = 1;
   for(auto & e : rs) {
     e.value = idx++;
     rnd(e.r);
   }
-  print_all(rs);
+  // print_all(rs);
   std::sort(rs.begin(), rs.end(), [](const VRect& a, const VRect& b) { return a.r < b.r;});
   std::cout << "***********" << std::endl;
   print_all(rs);
@@ -327,12 +339,12 @@ int main() {
     if (i >= rs.size())
       break;
   }
-  EquiDistRange r{0, 8, 3};
-  for(auto i : r) {
-    cout << i << ", ";
-  }
-  cout << endl;
-  RectScale scale(bounds, 50, 50);
+  // EquiDistRange r{0, 8, 3};
+  // for(auto i : r) {
+  //   cout << i << ", ";
+  // }
+  // cout << endl;
+  RectScale scale(bounds, 20, 20);
   VRectGrid vrg{scale, rs.begin(), rs.end()};
   Point p;
   for(int i = 0; i < 10; ++i) {
@@ -342,4 +354,6 @@ int main() {
       cout << e << " " << e.r.contains(p) << endl;
     }
   }
+  cout << "*******" << endl;
+  cout << vrg;
 }
