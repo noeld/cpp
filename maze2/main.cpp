@@ -41,42 +41,48 @@ int main(int argn, char* argv[]) {
 //    m.RemoveWall(3, maze2::WEST);
 //    cout << m;
 
-        maze2::Maze mm(x, y);
-        //cout << mm << endl;
-        maze2::RandomizeMaze(mm);
+        maze2::Maze maze(x, y);
+        //cout << maze << endl;
+        maze2::RandomizeMaze(maze);
         std::vector<maze2::pos_t> way;
-        maze2::pos_t p1 = 0, p2 = mm.Size() / 2 + mm.Width() / 2, p3 = mm.Size() - 1;
-        bool connected  = maze2::ShortestPath(mm, p1, p3, way);
-        // bool connected2 = maze2::ShortestPath(mm, p2, p3, way);
+        maze2::pos_t p1 = 0, p2 = maze.Size() / 2 + maze.Width() / 2, p3 = maze.Size() - 1;
+        bool connected  = maze2::ShortestPath(maze, p1, p3, way);
+        // bool connected2 = maze2::ShortestPath(maze, p2, p3, way);
         //if (connected && connected2) {
         if (connected) {
             //cout << p1 << ", " << p2 << ", and " << p3 << " are connected: ";
             cout << p1 << ", " << p3 << " are connected: " << endl;
-            mm.SetMarked(p1);
-            //mm.SetMarked(p2);
-            mm.SetMarked(p3);
+            maze.SetMarked(p1);
+            //maze.SetMarked(p2);
+            maze.SetMarked(p3);
 
-            if (mark)
-                for (auto e : way)
-                    mm.SetMarked(e);
-
-            std::wstring filename = L"maze2_" + std::to_wstring(mm.Width()) + L"x" + std::to_wstring(mm.Height()) + L".png";
-            maze2::RenderBitmapGDIP(mm, mazeDrawParams, filename);
+            {
+                // paint the maze
+                std::wstring filename = L"maze2_" + std::to_wstring(maze.Width()) + L"x" + std::to_wstring(maze.Height()) + L".png";
+                maze2::RenderBitmapGDIP(maze, mazeDrawParams, filename);
+            }
 
             for(auto e : way) {
                 cout << e << " ";
-                    mm.SetMarked(e);
+                    maze.SetMarked(e);
             }
+
+            {
+                // paint the maze with solution
+                std::wstring filename = L"maze2_" + std::to_wstring(maze.Width()) + L"x" + std::to_wstring(maze.Height()) + L"_solution.png";
+                maze2::RenderBitmapGDIP(maze, mazeDrawParams, filename);
+            }
+
             cout << endl;
 
-            cout << "Schwierigkeit [1 - 100]: " << static_cast<unsigned>(way.size() / static_cast<double>(mm.Size()) * 100) << endl;
+            cout << "Schwierigkeit [1 - 100]: " << static_cast<unsigned>(way.size() / static_cast<double>(maze.Size()) * 100) << endl;
 
         } else {
             cout << p1 << ", " << p2 << ", and " << p3 << " are not connected." << endl;
             cout << p1 << " and " << p3 << " are not connected." << endl;
         }
-        if (mm.Size() < 1000)
-            cout << mm << endl;
+        if (maze.Size() < 1000)
+            cout << maze << endl;
         //cout.flush();
 
     } catch (const std::exception& e) {
