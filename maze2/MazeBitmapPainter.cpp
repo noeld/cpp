@@ -6,6 +6,8 @@
 #include <windows.h>
 #include <gdiplus.h>
 #include <d2d1.h>
+#include <complex>
+#include <thread>
 
 namespace maze2 {
 
@@ -141,6 +143,76 @@ bool maze2::RenderBitmap(const maze2::Maze &m, const size_t cellsize, DWORD pens
     return true;
 }
 
+using float_t   = float;
+using complex_t = std::complex<float_t>;
+
+
+static const unsigned maxit = 127;
+
+unsigned Iterate(float_t x, float_t y) {
+    complex_t c(x, y), cc;
+    for(unsigned i = 0; i < maxit; ++i) {
+        if (std::norm(cc) > 4.0) {
+            return i;
+        }
+        cc = cc * cc + c;
+    }
+    return maxit;
+};
+
+void RenderMandelbrot(Gdiplus::Bitmap* bmp) {
+    using namespace Gdiplus;
+
+    const float_t xmin = -2.0f;
+    const float_t ymin = -1.0f;
+    const float_t xmax =  0.0f;
+    const float_t ymax =  1.0f;
+
+    const float_t xp = (xmax - xmin) / bmp->GetWidth();
+    const float_t yp = (ymax - ymin) / bmp->GetHeight();
+
+    auto compute = [bmp, xp, yp, xmin, ymin, xmax, ymax](UINT startnum, UINT num) {
+//        for(UINT y = 0; y < bmp.GetHeight(); ++y) {
+//            float_t yy = ymax - yp/2 - y * yp;
+//            float_t xx = xmin + xp/2;
+//            for(UINT x = 0; x < bmp.GetWidth(); ++x, xx += xp) {
+//                unsigned iterations = it(xx, yy) + 127;
+//                bmp.SetPixel(x, y, Color(iterations, iterations, iterations));
+//            }
+//        }
+        UINT done = 0;
+        unsigned w = bmp->GetWidth();
+        unsigned x = startnum % w;
+        unsigned y = startnum / w;
+        float_t xx = xmin + xp/2 + x * xp;
+        float_t yy = ymax - yp/2 - y * yp;
+        while(done < num) {
+            unsigned iterations = Iterate(xx, yy) + 127;
+            bmp->SetPixel(x, y, Color(iterations, iterations, iterations));
+            ++x;
+            xx += xp;
+            if (x == w) {
+                x = 0;
+                xx = xmin + xp / 2;
+                ++y;
+                yy -= yp;
+            }
+            ++done;
+        }
+    };
+
+    std::vector<std::thread> threads;
+    for(unsigned i = 0, n = 0, anz = (bmp->GetWidth() * bmp->GetHeight()) /  1 ;//std::thread::hardware_concurrency();
+        n < 1; //std::thread::hardware_concurrency();
+        ++n, i += anz) {
+        //threads.emplace_back(compute, i, anz);
+        compute(i, anz);
+    }
+    for(auto & e : threads) {
+        e.join();
+    }
+}
+
 bool maze2::RenderBitmapGDIP(const maze2::Maze &m, const MazeDrawParams& params, std::wstring filename) {
     // Test GDI+
     using namespace Gdiplus;
@@ -154,13 +226,14 @@ bool maze2::RenderBitmapGDIP(const maze2::Maze &m, const MazeDrawParams& params,
     CLSID clsid;
     GetEncoderClsid(L"image/png", &clsid);
 
-    const LONG bmpWidth        = params.cellsize * m.Width()  + params.pensize + 2 * params.padding;
-    const LONG bmpHeight       = params.cellsize * m.Height() + params.pensize + 2 * params.padding;
+    const INT bmpWidth        = params.cellsize * m.Width()  + params.pensize + 2 * params.padding;
+    const INT bmpHeight       = params.cellsize * m.Height() + params.pensize + 2 * params.padding;
     {
         Bitmap bmp(bmpWidth, bmpHeight, PixelFormat24bppRGB);
         Graphics g(&bmp);
 
         g.Clear(Color(0xff, 0xff, 0xff));
+        //RenderMandelbrot(&bmp);
         Pen p(Color(params.pen.r, params.pen.g, params.pen.b), params.pensize);
         PosNavigator pn(m.Width(), m.Height());
         for (maze2::pos_t y = 0; y < m.Height(); ++y) {
