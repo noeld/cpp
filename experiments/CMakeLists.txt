@@ -40,7 +40,7 @@ find_package(Boost REQUIRED)
 add_executable(indexfile indexfile.cpp)
 target_link_libraries(indexfile ${BOOST_LIBRARIES})
 
-add_executable(rtree rtree.cpp)
-target_link_libraries(rtree ${BOOST_LIBRARIES})
-
 add_executable(areagrid areagrid.cpp)
+
+add_executable(mmap mmap.cpp)
+

@@ -27,6 +27,13 @@
 *.out
 *.app
 
+# debug symbols
+*.dSYM
+.DS_Store
+
+# Pictures
+*.png
+
 generator/Testgenerator.dSYM/Contents/Resources/DWARF/Testgenerator
 # build folders
 cmake-build-*
