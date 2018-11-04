@@ -34,9 +34,9 @@ struct EquiDistRange {
         bool operator<=(const Iterator& b) const { return index_ <= b.index_; }
         bool operator>(const Iterator& b) const { return index_ > b.index_; }
         bool operator>=(const Iterator& b) const { return index_ >= b.index_; }
-        Iterator& operator++() { ++index_; }
+        Iterator& operator++() { ++index_; return *this; }
         Iterator operator++(int) { auto tmp = *this; ++index_; return tmp; }
-        Iterator& operator--() { --index_; }
+        Iterator& operator--() { --index_; return *this; }
         Iterator operator--(int) { auto tmp = *this; --index_; return tmp; }
         int operator*() { return r_[index_]; }
     };
@@ -155,6 +155,9 @@ private:
 };
 
 struct RectScale {
+    const Rect bounds_;
+    const unsigned width_, height_;
+    const double fx_, fy_;
     RectScale(const Rect& bounds, unsigned width = 100, unsigned height = 100)
     : bounds_{bounds}
     , width_{width}
@@ -162,9 +165,6 @@ struct RectScale {
     , fx_{width_/static_cast<double>(bounds_.width())}
     , fy_{height_/static_cast<double>(bounds_.height())}
     {}
-    const Rect bounds_;
-    const unsigned width_, height_;
-    const double fx_, fy_;
     Rect operator()(const Rect& r) const {
         return Rect{
             static_cast<int>(std::floor(fx_ * ( r.min.x - bounds_.min.x)))

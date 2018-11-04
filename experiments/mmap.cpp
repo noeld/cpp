@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <array>
+#include <valarray>
 #include <algorithm>
 #include <numeric>
 #include <boost/format.hpp>
@@ -16,20 +17,39 @@ extern "C" {
 char const * const file_name = "/Users/arnold/Downloads/CentOS-7-x86_64-DVD-1708.iso";  
 //char const * const file_name = "/Users/arnold/Downloads/SmartSwitch_for_Mac.dmg";  
 
-template<typename T, typename D>
+template<typename T, typename D, typename S = bool(&)(T)>
 class AutoHandle {
 public:
-    AutoHandle(const T& handle, D&& deleter, bool(&&success)(T)) 
+    AutoHandle(const T& handle, D&& deleter, S&& success) 
     : handle_{handle}
     , deleter_{std::forward<D>(deleter)}
-    , success_{std::forward<bool(&)(T)>(success)}
+    , success_{success(handle_)}
     {
-        if (!success_(handle_)) {
+        std::cout << "AutoHandle(const T& handle, D&& deleter, S&& success)" << std::endl;
+        if (!success_) {
             throw "Fehler";
         }
     }
+    // AutoHandle(const T& handle, D&& deleter, bool(*success)(T) = nullptr) 
+    // : handle_{handle}
+    // , deleter_{std::forward<D>(deleter)}
+    // , success_{success != nullptr ? success(handle_) : true}
+    // {
+    //     std::cout << "AutoHandle(const T& handle, D&& deleter, bool(*success)(T) = nullptr) " << std::endl;
+    //     if (!success_) {
+    //         throw "Fehler";
+    //     }
+    // }
+    AutoHandle(const AutoHandle&) = delete;
+    AutoHandle(AutoHandle&& ah) 
+    : handle_{ah.handle_}
+    , deleter_{std::forward<D>(ah.deleter_)}
+    , success_{ah.success_}
+    {
+        ah.success_ = false;
+    }
     ~AutoHandle() noexcept {
-        if (success_(handle_)) {
+        if (success_) {
             deleter_(handle_);
         }
     }
@@ -39,11 +59,20 @@ public:
 private:
     const T handle_;
     const D& deleter_;
-    bool(&success_)(T);
+    bool success_;
 };
 
-bool check_fd(int i) { return i > -1; }
-bool check_mm(void* p) { return p != MAP_FAILED; }
+bool check_fd(int i) { std::cout << "check_fd(int i)" << std::endl; return i > -1;  }
+bool check_mm(void* p) { std::cout << "check_mm(void* p)" << std::endl; return p != MAP_FAILED;  }
+
+std::valarray<size_t> build_hist(uint8_t const * begin, uint8_t const * end) {
+    std::valarray<size_t> hist(0x100);
+    hist = 0;
+    std::for_each( begin
+                 , end
+                 , [&hist](const uint8_t& e) { ++hist[e]; } );
+    return hist;
+}
 
 int main(int argc, char const *argv[])
 {
@@ -63,14 +92,11 @@ int main(int argc, char const *argv[])
             , std::forward<decltype(fct_unmap)>(fct_unmap)
             , check_mm);
         std::cout << "Ptr: " << ahMM.get() << std::endl;
-        std::array<size_t, 0x100> hist;
-        std::fill(hist.begin(), hist.end(), 0);
-        std::for_each( static_cast<uint8_t const *>(ahMM.get())
-                     , static_cast<uint8_t const *>(ahMM.get()) + st.st_size
-                     , [&hist](const uint8_t& e) { ++hist[e]; } );
-        float sum = static_cast<float>(std::accumulate(hist.begin(), hist.end(), 0));
+        auto hist = build_hist( static_cast<uint8_t const *>(ahMM.get())
+                              , static_cast<uint8_t const *>(ahMM.get()) + st.st_size);
+        float sum = static_cast<float>(hist.sum());
         std::array<float, 0x100> histpcnt;
-        std::transform(hist.begin(), hist.end(), histpcnt.begin()
+        std::transform(std::begin(hist), std::end(hist), std::begin(histpcnt)
             , [sum](const size_t& i){ return i / sum * 100.0f; }
             );
         boost::format fmt{"%02x: %7d (%04.1f%%)"};
