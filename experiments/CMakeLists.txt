@@ -42,5 +42,13 @@ target_link_libraries(indexfile ${BOOST_LIBRARIES})
 
 add_executable(areagrid areagrid.cpp)
 
+
+#add_compile_options("-fopenmp")
 add_executable(mmap mmap.cpp)
+
+#add_executable(mmapmp mmap.cpp)
+#target_compile_options(mmapmp PUBLIC "-fopenmp" "-march=native")
+#target_compile_definitions(mmapmp PUBLIC _GLIBCXX_PARALLEL)
+#target_link_libraries(mmapmp gomp)
+
 
