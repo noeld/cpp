@@ -1,3 +1,5 @@
+// g++ -std=c++1y duplicate.cpp -o duplicate -lboost_system -lboost_filesystem -lcryptopp -O3
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -105,7 +107,11 @@ int main (int argc, char const *argv[])
 				std::this_thread::sleep_for(std::chrono::milliseconds(500));
 				size_t sp = processed;
 				if (!captureoutput) {
-					std::cerr << boost::format{"%5.2f (%d)"} % (sp/static_cast<float>(files_added)*100.0f) % digested << "%\r";
+					std::cerr << boost::format{"\r%5.2f%% (%d/%d files; %d hashed)"} 
+                                                % (sp/static_cast<float>(files_added)*100.0f) 
+                                                % sp
+                                                % files_added
+                                                % digested;
 				}
 				if (sp == files_added)
 					break;

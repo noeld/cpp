@@ -59,8 +59,32 @@ public:
 private:
     const T handle_;
     const D& deleter_;
-    bool success_;
+    bool success_ { false };
 };
+
+
+
+// class MappedFile {
+// public:
+//     static bool check_fd(int i) { std::cout << "check_fd(int i)" << std::endl; return i > -1;  }
+//     static bool check_mm(void* p) { std::cout << "check_mm(void* p)" << std::endl; return p != MAP_FAILED;  }
+
+//     MappedFile(char const * const file_name)
+//     : file_name(file_name)
+//     {
+
+//     }
+//     MappedFile(const MappedFile&) = delete;
+//     MappedFile(MappedFile&& mf)
+//     {}
+//     ~MappedFile();
+
+// private:
+//      const std::string&                     file_name_;
+//      struct stat                            st_;
+//      AutoHandle<int, decltype(close)>       ahF_;
+//      AutoHandle<void*, decltype(fct_unmap)> ahMM_;
+// };
 
 bool check_fd(int i) { std::cout << "check_fd(int i)" << std::endl; return i > -1;  }
 bool check_mm(void* p) { std::cout << "check_mm(void* p)" << std::endl; return p != MAP_FAILED;  }
@@ -74,6 +98,8 @@ std::valarray<size_t> build_hist(uint8_t const * begin, uint8_t const * end) {
     return hist;
 }
 
+
+
 int main(int argc, char const *argv[])
 {
     int ret = 0;
@@ -85,7 +111,7 @@ int main(int argc, char const *argv[])
         AutoHandle<int, decltype(close)> ahF(open(fname, O_RDONLY), close, check_fd);
         struct stat st;
         fstat(ahF, &st);
-        std::cout << "File size: " << st.st_size << std::endl;
+        std::cout << "file size: " << st.st_size << std::endl;
         const auto fct_unmap = [st](void* p){munmap(p, st.st_size);};
         AutoHandle<void*, decltype(fct_unmap)> ahMM(
               mmap(nullptr, st.st_size, PROT_READ, MAP_PRIVATE | MAP_FILE, ahF, 0)
