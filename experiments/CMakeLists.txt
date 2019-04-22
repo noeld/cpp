@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 project(Experiments)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 add_executable(deleter deleter.cpp)
 
@@ -51,4 +51,8 @@ add_executable(mmap mmap.cpp)
 #target_compile_definitions(mmapmp PUBLIC _GLIBCXX_PARALLEL)
 #target_link_libraries(mmapmp gomp)
 
+add_executable(simplebtree simplebtree.cpp)
 
+add_executable(kdtree2 kdtree2.cpp)
+
+add_executable(roman roman.cpp)
