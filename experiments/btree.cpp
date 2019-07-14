@@ -86,9 +86,47 @@ void print_size() {
     std::cout << "sizeof(" << typeid(T).name() << ") = " << sizeof(T) << std::endl;
 }
 
+// zweiter Versuch per UNION
+// BTII = BTree II
+
+struct alignas(8) BTIINode {
+    char     magic_[4];      // N O D E
+    uint32_t node_nr_;
+    uint32_t parent_node_nr;
+    uint8_t  type_;          // 1: leaf; 2: key
+    uint16_t size_;
+    union {
+        struct {
+
+        };
+        struct {
+
+        };
+    };
+};
+
+struct alignas(8) BTIIIndex {
+    char     magic_[4];      // I N D X
+    uint32_t node_nr;
+    uint32_t parent_node_nr;
+    uint8_t  type_;          // 3: index
+    uint16_t size_;
+    struct { uint32_t node_nr_; uint64_t offset_; } node_index_[];
+};
+
+struct alignas(8) BTIIHeader {
+    char     magic_[4];    // H E A D
+    uint32_t node_nr;      // 0
+    uint8_t  type_;        // 4: head
+    uint32_t root_node_nr;
+    uint16_t size_;
+    struct { uint32_t node_nr_; uint64_t offset_; } index_index_[];
+};
+
 int main(int argc, char const *argv[])
 {
-    print_size<BTKeyNode>();
-    print_size<BTLeafNode>();
+    // print_size<BTKeyNode>();
+    // print_size<BTLeafNode>();
+    constexpr size_t PAGESIZE = 4096;
     return 0;
 }

@@ -56,3 +56,11 @@ add_executable(simplebtree simplebtree.cpp)
 add_executable(kdtree2 kdtree2.cpp)
 
 add_executable(roman roman.cpp)
+
+#add_executable(pcretest pcrecpp.cpp)
+#target_include_directories(pcretest PRIVATE /usr/local/Cellar/pcre++/0.9.5/include)
+#target_link_libraries(pcretest -L/usr/local/Cellar/pcre/8.43/lib -lpcre)
+#target_link_libraries(pcretest -L/usr/local/Cellar/pcre++/0.9.5/lib pcre++)
+
+add_executable(iban iban.cpp)
+target_link_libraries(iban gmp)
