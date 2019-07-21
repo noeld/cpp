@@ -7,8 +7,6 @@ add_executable(deleter deleter.cpp)
 
 add_executable(hashjoin hashjoin.cpp)
 
-#add_executable(kdtree kdtree.cpp)
-
 add_executable(placement placement.cpp)
 
 add_executable(b64lookup b64lookup.cpp)
@@ -30,9 +28,8 @@ add_executable(zhang zhang.cpp)
 find_package(SDL2 REQUIRED)
 # find_package(CAIRO REQUIRED)
 
-include_directories(${SDL2_INCLUDE_DIRS})
-
 add_executable(sdltest sdltest.cpp)
+target_include_directories(sdltest PUBLIC ${SDL2_INCLUDE_DIRS})
 target_link_libraries(sdltest ${SDL2_LIBRARIES})
 target_link_libraries(sdltest cairo)
 
