@@ -16,7 +16,7 @@ private:
     int y_ {0};
 public:
     point() = default;
-    explicit point(int x, int y) : x_{x}, y_{y}{}
+    point(int x, int y) : x_{x}, y_{y} {}
     point(const point&) = default;
     const int& x() const noexcept { return x_; }
     int& x() noexcept { return x_; }
@@ -87,6 +87,9 @@ struct kdtree {
             return p_[i];
         }
         size_t left_ { NOCHILD }, right_ {NOCHILD};
+        kdnode& operator=(const point& p) {
+            p_ = p;
+        }
         unsigned depth_ { 0 };
         unsigned dim() const noexcept { return depth_ % 2; }
         friend std::ostream& operator<<(std::ostream& o, const kdtree::kdnode& n) {
@@ -105,18 +108,24 @@ struct kdtree {
             return o;
         }
     };
-    void build(const std::vector<point>& points) {
-        t_.resize(points.size());
-        auto pit = points.cbegin();
-        auto pend = points.cend();
+
+    template<typename T>
+    void build(const T& points) {
+        build(std::begin(points), std::end(points));
+    }
+
+    template<typename T>
+    void build(T begin, T end) {
+        t_.resize(std::distance(begin, end));
         auto it = t_.begin();
-        while(pit != pend) {
-            it->p_ = *pit;
-            ++pit;
+        while(begin != end) {
+            it->p_ = *begin;
+            ++begin;
             ++it;
         }
         root_ = buildtree(t_.begin(), t_.end(), 0);
     }
+
     void print() const {
         std::cout << std::endl;
         for (size_t i = 0; i < t_.size(); ++i) {
@@ -128,10 +137,22 @@ struct kdtree {
         explicit search_def(const point& p) : ref_{p} {}
         search_def(const search_def&) = default;
         search_def& operator=(const search_def&) = default;
+        double distance() const noexcept { return std::sqrt(distance_norm_); }
         const point ref_;  // point to search for
         const point* result_ { nullptr };  // closest match found
-        double distance_ { std::numeric_limits<double>::infinity() };  // square! of distance
+        double distance_norm_ { std::numeric_limits<double>::infinity() };  // square! of distance
         unsigned nodes_visited_ { 0 };  // number of nodes visited during search
+        friend std::ostream& operator<<(std::ostream& o, const search_def& sd) {
+            o << "Reference point: " << sd.ref_
+              << " Found: ";
+            if (sd.result_ == nullptr)
+                o << "(none)";
+            else 
+                o << *sd.result_;
+            o << " Distance " << sd.distance()
+              << " nodes visited: " << sd.nodes_visited_;
+            return o;
+        }
     };
     search_def nearest_neighbour(const point& ref) {
         search_def search { ref };
@@ -164,8 +185,8 @@ protected:
         kdtree::kdnode& n = t_[node_idx];
         auto i = depth % 2;
         auto d = search.ref_.distance_norm(n.p_);
-        if (d < search.distance_) {
-            search.distance_ = d;
+        if (d < search.distance_norm_) {
+            search.distance_norm_ = d;
             search.result_   = &n.p_;
         }
         double plane_dist  = n.p_[i] - search.ref_[i];
@@ -176,7 +197,7 @@ protected:
         find_nearest_neighbour(search, next_node, depth + 1);
         // if best distance is less equal the distance of the hyperplane, we
         // don't need to check other side
-        if (plane_dist2 >= search.distance_)
+        if (plane_dist2 >= search.distance_norm_)
             return;
         // otherwise search other side as well
         next_node = (plane_dist > 0) ? n.right_ : n.left_;
@@ -224,10 +245,7 @@ int main(int argc, char const *argv[])
         point ref(c, c);
         std::cout << "Searching for nearest neighbour for " << ref << std::endl;
         auto result = t.nearest_neighbour(ref);
-        std::cout << "Found " << *result.result_ 
-                  << " distance^2: " << result.distance_
-                  << " distance: " << std::sqrt(result.distance_)
-                  << " visited " << result.nodes_visited_ << " nodes." 
+        std::cout << result
                   << std::endl;
     }
 
@@ -244,6 +262,21 @@ int main(int argc, char const *argv[])
         for(const auto& e : testpoints) {
             auto result = t.nearest_neighbour(e);
         }
+    }
+
+    {
+        // test from rosetta code
+        // http://www.rosettacode.org/wiki/K-d_tree
+        std::cout << "Rosetta code test (http://www.rosettacode.org/wiki/K-d_tree)" << std::endl;
+        point rctest[] {{2, 3}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}};
+        kdtree rct;
+        rct.build(std::begin(rctest), std::end(rctest));
+        rct.print();
+        point rcp { 9, 2 };
+        auto rcresult = rct.nearest_neighbour(rcp);
+        std::cout << "Expected: (8, 1): " 
+                  << rcresult
+                  << std::endl;
     }
     return 0;
 }
