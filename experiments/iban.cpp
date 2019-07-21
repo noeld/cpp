@@ -6,7 +6,7 @@
 #include<boost/multiprecision/gmp.hpp>
 
 void usage() {
-    std::cout << "iban <iban>" << std::endl 
+    std::cout << "iban <iban> ..." << std::endl 
               << std::endl
               << "check iban" << std::endl;
 }
@@ -19,25 +19,24 @@ std::string convert_lc(const std::string& lc) {
     return conv_digit(lc[0]) + conv_digit(lc[1]);
 }
 
-int check_iban(const std::string iban) {
+int check_iban(const std::string& iban) {
     int ret = 0;
-    std::cout << "=== Checking " << iban << "===" << std::endl;
-    const std::regex re ("[A-Z][A-Z]\\d{20}", std::regex::icase);
+    std::cout << "=== Checking " << iban << " ===" << std::endl;
+    static const std::regex re ("[A-Z][A-Z]\\d{20}");
     if (! std::regex_match(iban, re)) {
         std::cout << "IBAN ist falsch formatiert" << std::endl;
         ret = 1;
     }
-    const std::regex ree("^(..)(..)(.+)$");
+    static const std::regex ree("^([A-Z][A-Z])(\\d\\d)(\\d+)$");
     std::smatch m;
     if (std::regex_match(iban, m, ree)) {
-        auto lc = m[1].str();
-        auto pz = m[2].str();
-        auto rest = m[3].str();
-        std::cout << "LC: " << lc << std::endl;
-        std::cout << "PZ: " << pz << std::endl;
-        std::cout << "Rest: " << rest << std::endl;
+        auto lc       = m[1].str();
+        auto pz       = m[2].str();
+        auto rest     = m[3].str();
         auto lcdigits = convert_lc(lc);
-        std::cout << "LC digits: " << lcdigits << std::endl;
+        std::cout << "LC: "   << lc   << " -> LC digits: " << lcdigits << std::endl;
+        std::cout << "PZ: "   << pz   << std::endl;
+        std::cout << "Rest: " << rest << std::endl;
         using namespace std::string_literals;
         boost::multiprecision::mpz_int i{rest + lcdigits + "00"s};
         boost::multiprecision::mpz_int calc_pz = 98 - (i % 97); 
