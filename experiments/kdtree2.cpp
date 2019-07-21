@@ -1,3 +1,5 @@
+// http://www.rosettacode.org/wiki/K-d_tree
+
 #include <iostream>
 #include <array>
 #include <vector>
@@ -5,16 +7,36 @@
 #include <random>
 #include <utility>
 #include <limits>
+// #include <boost/timer/timer.hpp>
+#include "timemeasure.h"
 
 struct point {
+private:
     int x_ {0};
     int y_ {0};
+public:
     point() = default;
     explicit point(int x, int y) : x_{x}, y_{y}{}
     point(const point&) = default;
+    const int& x() const noexcept { return x_; }
+    int& x() noexcept { return x_; }
+    const int& y() const noexcept { return y_; }
+    int& y() noexcept { return y_; }
+
     point& operator=(const point&) = default;
     int operator[](size_t i) const noexcept {
         return (i == 0) ? x_ : y_;
+    }
+    double distance_norm(const point& other) const {
+        double dx = static_cast<double>(x_ - other.x_);
+        double dy = static_cast<double>(y_ - other.y_);
+        double res = (dx * dx) + (dy * dy);
+        if (std::isnan(res)) {
+            std::cerr << "nan! for ref: " << (*this) << " other: " << other 
+                      << " dx: " << dx << " dy: " << dy 
+                      << std::endl;
+        }
+        return res;
     }
     friend std::ostream& operator<<(std::ostream& o, const point& p) {
         return o << '(' << p.x_ << "; " << p.y_ << ')';
@@ -102,9 +124,25 @@ struct kdtree {
         }
         std::cout << "root: " << root_ << std::endl;
     }
+    struct search_def {
+        explicit search_def(const point& p) : ref_{p} {}
+        search_def(const search_def&) = default;
+        search_def& operator=(const search_def&) = default;
+        const point ref_;  // point to search for
+        const point* result_ { nullptr };  // closest match found
+        double distance_ { std::numeric_limits<double>::infinity() };  // square! of distance
+        unsigned nodes_visited_ { 0 };  // number of nodes visited during search
+    };
+    search_def nearest_neighbour(const point& ref) {
+        search_def search { ref };
+        if ( root_ == NOCHILD )
+            return search;
+        find_nearest_neighbour(search, root_, 0);
+        return search;
+    }
     private:
         std::vector<kdtree::kdnode> t_;
-        size_t root_ { 0 };
+        size_t root_ { NOCHILD };
 protected:
     size_t buildtree(decltype(t_.begin()) begin, decltype(t_.begin()) end, unsigned depth) {
         if (begin == end)
@@ -118,6 +156,31 @@ protected:
         m->left_ = lm;
         m->right_ = rm;
         return ret;
+    }
+    void find_nearest_neighbour(search_def& search, size_t node_idx, unsigned depth) {
+        if (node_idx == NOCHILD)
+            return;
+        ++search.nodes_visited_;
+        kdtree::kdnode& n = t_[node_idx];
+        auto i = depth % 2;
+        auto d = search.ref_.distance_norm(n.p_);
+        if (d < search.distance_) {
+            search.distance_ = d;
+            search.result_   = &n.p_;
+        }
+        double plane_dist  = n.p_[i] - search.ref_[i];
+        double plane_dist2 = plane_dist * plane_dist;
+        // current splitting hyperplane is right of ref point -> search left subtree
+        // otherwise if hyperplane is left of ref point -> search right subtree
+        auto next_node = (plane_dist > 0) ? n.left_ : n.right_;
+        find_nearest_neighbour(search, next_node, depth + 1);
+        // if best distance is less equal the distance of the hyperplane, we
+        // don't need to check other side
+        if (plane_dist2 >= search.distance_)
+            return;
+        // otherwise search other side as well
+        next_node = (plane_dist > 0) ? n.right_ : n.left_;
+        find_nearest_neighbour(search, next_node, depth + 1);
     }
 
 };
@@ -134,10 +197,14 @@ int main(int argc, char const *argv[])
     std::random_device rd;
     std::uniform_int_distribution<int> dist(0, num_points);
     point_vector points;
-    for(size_t i = 0; i < num_points; ++i) {
-        points.emplace_back(dist(rd), dist(rd));
+    {
+        TimeMeasure timer(true, "generating random points");
+        for(size_t i = 0; i < num_points; ++i) {
+            points.emplace_back(dist(rd), dist(rd));
+        }
     }
-    std::cout << points << std::endl;
+    if (points.size() < 100)
+        std::cout << points << std::endl;
     // median_le(points.begin(), points.end(), 0);
     // std::cout << points << std::endl;
     // median_le(points.begin(), points.end(), 1);
@@ -145,7 +212,38 @@ int main(int argc, char const *argv[])
     //std::vector<std::reference_wrapper<point>> idxx(points.begin(), points.end());
     //std::vector<std::reference_wrapper<point>> idxy(points.begin(), points.end());
     kdtree t;
-    t.build(points);
-    t.print();
+    {
+        TimeMeasure timer(true, "building KD tree");
+        t.build(points);
+    }
+    if (points.size() < 100)
+        t.print();
+
+    for(double c = (num_points / 3.0) / 2.0; c < num_points; c += num_points / 3.0) {
+        TimeMeasure timer(true, "Searching point");
+        point ref(c, c);
+        std::cout << "Searching for nearest neighbour for " << ref << std::endl;
+        auto result = t.nearest_neighbour(ref);
+        std::cout << "Found " << *result.result_ 
+                  << " distance^2: " << result.distance_
+                  << " distance: " << std::sqrt(result.distance_)
+                  << " visited " << result.nodes_visited_ << " nodes." 
+                  << std::endl;
+    }
+
+    std::cout << "Searching for " << num_points << " random points in tree:" << std::endl;
+    point_vector testpoints;
+    {
+        TimeMeasure timer(true, "generating random test points");
+        for(size_t i = 0; i < num_points; ++i) {
+            testpoints.emplace_back(dist(rd), dist(rd));
+        }
+    }
+    {
+        TimeMeasure timer(true, "Searching point series");
+        for(const auto& e : testpoints) {
+            auto result = t.nearest_neighbour(e);
+        }
+    }
     return 0;
 }
