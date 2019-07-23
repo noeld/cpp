@@ -134,31 +134,66 @@ struct kdtree {
         std::cout << "root: " << root_ << std::endl;
     }
     struct search_def {
-        explicit search_def(const point& p) : ref_{p} {}
+        explicit search_def(const point& p, size_t max_results = 1) 
+        : ref_{p}, max_results_{max_results}
+        {}
         search_def(const search_def&) = default;
         search_def& operator=(const search_def&) = default;
-        double distance() const noexcept { return std::sqrt(distance_norm_); }
+        //double distance() const noexcept { return std::sqrt(distance_norm_); }
         const point ref_;  // point to search for
-        const point* result_ { nullptr };  // closest match found
-        double distance_norm_ { std::numeric_limits<double>::infinity() };  // square! of distance
+        //const point* result_ { nullptr };  // closest match found
+        using result_type = std::pair<point const*, double>;
+        std::vector<result_type> results_;
+        static bool cmp(const result_type& a, const result_type& b) {
+            return a.second < b.second;
+        };
+        size_t max_results_ { 1 }; // return nearest max_results points
+        bool is_full() const noexcept { return results_.size() == max_results_; }
+        double max_best_distance_norm() const noexcept {
+            if (results_.size() == 0)
+                return std::numeric_limits<double>::infinity();
+            return results_[0].second;   
+        }
+        void check_insert_result(point const * p, double distance_norm) {
+            if (!is_full() || distance_norm < max_best_distance_norm()) {
+                if (results_.size() >= max_results_) {
+                    std::pop_heap(results_.begin(), results_.end(), cmp);
+                    results_.back() = std::make_pair(p, distance_norm);
+                } else {
+                    results_.push_back(std::make_pair(p, distance_norm));
+                }
+                std::push_heap(results_.begin(), results_.end(), cmp);
+            }
+        }
+        void sort_results() {
+            std::sort_heap(results_.begin(), results_.end(), cmp);
+        }
+        //double distance_norm_ { std::numeric_limits<double>::infinity() };  // square! of distance
         unsigned nodes_visited_ { 0 };  // number of nodes visited during search
         friend std::ostream& operator<<(std::ostream& o, const search_def& sd) {
             o << "Reference point: " << sd.ref_
-              << " Found: ";
-            if (sd.result_ == nullptr)
-                o << "(none)";
-            else 
-                o << *sd.result_;
-            o << " Distance " << sd.distance()
-              << " nodes visited: " << sd.nodes_visited_;
+              << " max results: " << sd.max_results_ 
+              << " Found: " << std::endl;
+            for(size_t i = 0; i < sd.results_.size(); ++i) {
+                result_type const& r = sd.results_[i];
+                o << (i+1) << ": "; 
+                if (r.first == nullptr)
+                    o << "(none)";
+                else 
+                    o << *r.first;
+                o << " Distance " << std::sqrt(r.second)
+                  << std::endl;
+            }
+            o << " nodes visited: " << sd.nodes_visited_;
             return o;
         }
     };
-    search_def nearest_neighbour(const point& ref) {
-        search_def search { ref };
+    search_def nearest_neighbours(const point& ref, size_t max_results = 1) {
+        search_def search (ref, max_results);
         if ( root_ == NOCHILD )
             return search;
-        find_nearest_neighbour(search, root_, 0);
+        find_nearest_neighbours(search, root_, 0);
+        search.sort_results();
         return search;
     }
     private:
@@ -178,30 +213,27 @@ protected:
         m->right_ = rm;
         return ret;
     }
-    void find_nearest_neighbour(search_def& search, size_t node_idx, unsigned depth) {
+    void find_nearest_neighbours(search_def& search, size_t node_idx, unsigned depth) {
         if (node_idx == NOCHILD)
             return;
         ++search.nodes_visited_;
         kdtree::kdnode& n = t_[node_idx];
         auto i = depth % 2;
         auto d = search.ref_.distance_norm(n.p_);
-        if (d < search.distance_norm_) {
-            search.distance_norm_ = d;
-            search.result_   = &n.p_;
-        }
+        search.check_insert_result(&n.p_, d);
         double plane_dist  = n.p_[i] - search.ref_[i];
         double plane_dist2 = plane_dist * plane_dist;
         // current splitting hyperplane is right of ref point -> search left subtree
         // otherwise if hyperplane is left of ref point -> search right subtree
         auto next_node = (plane_dist > 0) ? n.left_ : n.right_;
-        find_nearest_neighbour(search, next_node, depth + 1);
+        find_nearest_neighbours(search, next_node, depth + 1);
         // if best distance is less equal the distance of the hyperplane, we
         // don't need to check other side
-        if (plane_dist2 >= search.distance_norm_)
+        if (search.is_full() && (plane_dist2 >= search.max_best_distance_norm()))
             return;
         // otherwise search other side as well
         next_node = (plane_dist > 0) ? n.right_ : n.left_;
-        find_nearest_neighbour(search, next_node, depth + 1);
+        find_nearest_neighbours(search, next_node, depth + 1);
     }
 
 };
@@ -215,6 +247,9 @@ int main(int argc, char const *argv[])
     size_t num_points = 10;
     if (argc > 1)
         num_points = std::stoul(argv[1]);
+    size_t num_results = 1;
+    if (argc > 2)
+        num_results = std::stoul(argv[2]);
     std::random_device rd;
     std::uniform_int_distribution<int> dist(0, num_points);
     point_vector points;
@@ -244,7 +279,7 @@ int main(int argc, char const *argv[])
         TimeMeasure timer(true, "Searching point");
         point ref(c, c);
         std::cout << "Searching for nearest neighbour for " << ref << std::endl;
-        auto result = t.nearest_neighbour(ref);
+        auto result = t.nearest_neighbours(ref, num_results);
         std::cout << result
                   << std::endl;
     }
@@ -260,7 +295,7 @@ int main(int argc, char const *argv[])
     {
         TimeMeasure timer(true, "Searching point series");
         for(const auto& e : testpoints) {
-            auto result = t.nearest_neighbour(e);
+            auto result = t.nearest_neighbours(e, num_results);
         }
     }
 
@@ -273,7 +308,7 @@ int main(int argc, char const *argv[])
         rct.build(std::begin(rctest), std::end(rctest));
         rct.print();
         point rcp { 9, 2 };
-        auto rcresult = rct.nearest_neighbour(rcp);
+        auto rcresult = rct.nearest_neighbours(rcp, num_results);
         std::cout << "Expected: (8, 1): " 
                   << rcresult
                   << std::endl;
