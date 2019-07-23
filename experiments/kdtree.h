@@ -1,5 +1,18 @@
 // http://www.rosettacode.org/wiki/K-d_tree
 
+// TODO:
+// [x] add nearest_neighbours search
+// [x] add max_results search parameter
+// [x] add max_distance search parameter
+// [ ] add support for dimensions > 2
+// [ ] add meta information to point (payload)
+// [ ] cleanup, remove old code
+// [ ] proper documentation (doxygen?)
+// [ ] add proper command line options (boost)
+// [ ] add README.md
+// [x] add unit tests (boost)
+// [x] split into header-only kd-tree and test-cases / sample app
+
 #include <iostream>
 #include <array>
 #include <vector>
@@ -7,7 +20,6 @@
 #include <random>
 #include <utility>
 #include <limits>
-// #include <boost/timer/timer.hpp>
 #include "timemeasure.h"
 
 struct point {
@@ -18,15 +30,28 @@ public:
     point() = default;
     point(int x, int y) : x_{x}, y_{y} {}
     point(const point&) = default;
-    const int& x() const noexcept { return x_; }
-    int& x() noexcept { return x_; }
-    const int& y() const noexcept { return y_; }
-    int& y() noexcept { return y_; }
-
     point& operator=(const point&) = default;
+
+    // accessors for the first n dimensions
+    int  x() const noexcept { return x_; }
+    int& x() noexcept       { return x_; }
+    int  y() const noexcept { return y_; }
+    int& y() noexcept       { return y_; }
+    // int  z() const noexcept { return z_; }
+    // int& z() noexcept       { return z_; }
+
+    // 
     int operator[](size_t i) const noexcept {
         return (i == 0) ? x_ : y_;
     }
+    int& operator[](size_t i) noexcept {
+        return (i == 0) ? x_ : y_;   
+    }
+
+    friend bool operator==(const point& a, const point& b) {
+        return a.x_ == b.x_ && a.y_ == b.y_;
+    }
+
     double distance_norm(const point& other) const {
         double dx = static_cast<double>(x_ - other.x_);
         double dy = static_cast<double>(y_ - other.y_);
@@ -71,11 +96,9 @@ T median_le(T start, T end, size_t dim) {
     if (start + 1 == end)
         return start;
     T m = start + std::distance(start, end)/2;
-     // std::cout << std::distance(start, m) << ": " << *m << " . ";
     auto acc = [dim](const typename T::value_type& a, const typename T::value_type& b) -> bool { return a[dim] < b[dim]; };
     std::nth_element(start, m, end, acc);
     for(auto m2 = m + 1; m2 != end && (*m2)[dim] == (*m)[dim]; ++m2, ++m);
-    // std::cout << "=" << (*m)[dim] << " - " << std::distance(start, m);
     return m;
 }
 
@@ -140,26 +163,27 @@ struct kdtree {
         {}
         search_def(const search_def&) = default;
         search_def& operator=(const search_def&) = default;
-        //double distance() const noexcept { return std::sqrt(distance_norm_); }
-        const point ref_;  // point to search for
-        //const point* result_ { nullptr };  // closest match found
-        using result_type = std::pair<point const*, double>;
-        std::vector<result_type> results_;
-        static bool cmp(const result_type& a, const result_type& b) {
-            return a.second < b.second;
+        const point ref_;  // point to search for ( reference point )
+        struct result_type {
+            result_type() = default;
+            result_type(point const* p, const double& distance_norm) : p_{p}, distance_norm_{distance_norm}
+            {}
+            point const* p_ { nullptr };               // const pointer to point
+            double distance_norm_ { std::numeric_limits<double>::max() };         // distance norm
+            double distance() const noexcept { return std::sqrt(distance_norm_);}
         };
-        size_t max_results_ { 1 }; // return nearest max_results points
-        double max_distance_norm_ ;     // return all points up to this distance
+        std::vector<result_type> results_; // result vector
+        static bool cmp(const result_type& a, const result_type& b) {
+            return a.distance_norm_ < b.distance_norm_;
+        };
+        size_t max_results_ { 1 };  // return nearest max_results points
+        double max_distance_norm_;  // return all points up to this distance
         bool is_full() const noexcept { return results_.size() == max_results_; }
         double max_best_distance_norm() const noexcept {
             if (results_.size() == 0)
                 return std::numeric_limits<double>::infinity();
-            return results_[0].second; 
+            return results_[0].distance_norm_; 
         }
-        // bool consider(double distance_norm) const noexcept {
-        //     return ( is_full() && distance_norm < max_best_distance_norm())
-        //         || (!is_full() && distance_norm <= max_distance_norm_); 
-        // }
         enum class CONSIDER { NOT, REPLACE, APPEND };
         search_def::CONSIDER consider_check(double distance_norm) const noexcept {
             if (is_full() && distance_norm < max_best_distance_norm())
@@ -173,11 +197,11 @@ struct kdtree {
             switch(consider) {
                 case search_def::CONSIDER::REPLACE:
                     std::pop_heap(results_.begin(), results_.end(), cmp);
-                    results_.back() = std::make_pair(p, distance_norm);
+                    results_.back() = { p, distance_norm };
                     std::push_heap(results_.begin(), results_.end(), cmp);
                     break;
                 case search_def::CONSIDER::APPEND:
-                    results_.push_back(std::make_pair(p, distance_norm));
+                    results_.emplace_back(p, distance_norm);
                     std::push_heap(results_.begin(), results_.end(), cmp);
                     break;
                 case search_def::CONSIDER::NOT:
@@ -187,19 +211,10 @@ struct kdtree {
                     // no action
                 ;
             }
-            // // if (is_full() && distance_norm < max_best_distance_norm()) {
-            //     std::pop_heap(results_.begin(), results_.end(), cmp);
-            //     results_.back() = std::make_pair(p, distance_norm);
-            //     std::push_heap(results_.begin(), results_.end(), cmp);
-            // } else if (!is_full() && distance_norm <= max_distance_norm_) {
-            //     results_.push_back(std::make_pair(p, distance_norm));
-            //     std::push_heap(results_.begin(), results_.end(), cmp);
-            // }
         }
         void sort_results() {
             std::sort_heap(results_.begin(), results_.end(), cmp);
         }
-        //double distance_norm_ { std::numeric_limits<double>::infinity() };  // square! of distance
         unsigned nodes_visited_ { 0 };  // number of nodes visited during search
         friend std::ostream& operator<<(std::ostream& o, const search_def& sd) {
             o << "Reference point: " << sd.ref_
@@ -209,11 +224,11 @@ struct kdtree {
             for(size_t i = 0; i < sd.results_.size(); ++i) {
                 result_type const& r = sd.results_[i];
                 o << (i+1) << ": "; 
-                if (r.first == nullptr)
+                if (r.p_ == nullptr)
                     o << "(none)";
                 else 
-                    o << *r.first;
-                o << " Distance " << std::sqrt(r.second)
+                    o << *r.p_;
+                o << " Distance " << r.distance()
                   << std::endl;
             }
             o << " nodes visited: " << sd.nodes_visited_;
@@ -272,82 +287,3 @@ protected:
 };
 
 
-
-int main(int argc, char const *argv[])
-{
-    using namespace std;
-
-    size_t num_points = 10;
-    if (argc > 1)
-        num_points = std::stoul(argv[1]);
-    size_t num_results = 1;
-    if (argc > 2)
-        num_results = std::stoul(argv[2]);
-    double max_dist = num_points;
-    if (argc > 3)
-        max_dist = std::stod(argv[3]);
-    std::random_device rd;
-    std::uniform_int_distribution<int> dist(0, num_points);
-    point_vector points;
-    {
-        TimeMeasure timer(true, "generating random points");
-        for(size_t i = 0; i < num_points; ++i) {
-            points.emplace_back(dist(rd), dist(rd));
-        }
-    }
-    if (points.size() < 100)
-        std::cout << points << std::endl;
-    // median_le(points.begin(), points.end(), 0);
-    // std::cout << points << std::endl;
-    // median_le(points.begin(), points.end(), 1);
-    // std::cout << points << std::endl;
-    //std::vector<std::reference_wrapper<point>> idxx(points.begin(), points.end());
-    //std::vector<std::reference_wrapper<point>> idxy(points.begin(), points.end());
-    kdtree t;
-    {
-        TimeMeasure timer(true, "building KD tree");
-        t.build(points);
-    }
-    if (points.size() < 100)
-        t.print();
-
-    for(double c = (num_points / 3.0) / 2.0; c < num_points; c += num_points / 3.0) {
-        TimeMeasure timer(true, "Searching point");
-        point ref(c, c);
-        std::cout << "Searching for nearest neighbour for " << ref << std::endl;
-        auto result = t.nearest_neighbours(ref, num_results, max_dist);
-        std::cout << result
-                  << std::endl;
-    }
-
-    std::cout << "Searching for " << num_points << " random points in tree:" << std::endl;
-    point_vector testpoints;
-    {
-        TimeMeasure timer(true, "generating random test points");
-        for(size_t i = 0; i < num_points; ++i) {
-            testpoints.emplace_back(dist(rd), dist(rd));
-        }
-    }
-    {
-        TimeMeasure timer(true, "Searching point series");
-        for(const auto& e : testpoints) {
-            auto result = t.nearest_neighbours(e, num_results, max_dist);
-        }
-    }
-
-    {
-        // test from rosetta code
-        // http://www.rosettacode.org/wiki/K-d_tree
-        std::cout << "Rosetta code test (http://www.rosettacode.org/wiki/K-d_tree)" << std::endl;
-        point rctest[] {{2, 3}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}};
-        kdtree rct;
-        rct.build(std::begin(rctest), std::end(rctest));
-        rct.print();
-        point rcp { 9, 2 };
-        auto rcresult = rct.nearest_neighbours(rcp, num_results, max_dist);
-        std::cout << "Expected: (8, 1): " 
-                  << rcresult
-                  << std::endl;
-    }
-    return 0;
-}

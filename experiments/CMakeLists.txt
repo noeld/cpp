@@ -50,7 +50,14 @@ add_executable(mmap mmap.cpp)
 
 add_executable(simplebtree simplebtree.cpp)
 
-add_executable(kdtree2 kdtree2.cpp)
+set(KDTSOURCES timemeasure.h kdtree.h kdtree.cpp)
+add_executable(kdtree ${KDTSOURCES})
+# add_library(kdtree ${KDTSOURCES})
+
+# https://stackoverflow.com/questions/14446495/cmake-project-structure-with-unit-tests
+add_executable(kdtree_test kdtree_test.cpp)
+enable_testing()
+add_test(KDTTest kdtree_test)
 
 add_executable(roman roman.cpp)
 
