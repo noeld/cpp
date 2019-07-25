@@ -4,11 +4,15 @@
 // [x] add nearest_neighbours search
 // [x] add max_results search parameter
 // [x] add max_distance search parameter
-// [ ] add support for dimensions > 2
+// [x] add support for dimensions > 2
+// [ ] add support for vectorization
+// [ ] add support for other dimensions types than int
 // [ ] add meta information to point (payload)
 // [ ] cleanup, remove old code
+// [ ] add ability to add and remove points, rebuild tree
 // [ ] proper documentation (doxygen?)
 // [ ] add proper command line options (boost)
+// [ ] add namespace
 // [ ] add README.md
 // [x] add unit tests (boost)
 // [x] split into header-only kd-tree and test-cases / sample app
@@ -20,72 +24,55 @@
 #include <random>
 #include <utility>
 #include <limits>
+#include <initializer_list>
 #include "timemeasure.h"
 
+template<size_t DIMENSIONS = 2>
 struct point {
+    static size_t size() noexcept { return DIMENSIONS; };
 private:
-    int x_ {0};
-    int y_ {0};
+    using element_type = std::array<int, DIMENSIONS>;
+    element_type e_;
 public:
     point() = default;
-    point(int x, int y) : x_{x}, y_{y} {}
+    point(std::initializer_list<int> list) {
+        std::copy_n(std::begin(list), DIMENSIONS, std::begin(e_));
+    }
     point(const point&) = default;
     point& operator=(const point&) = default;
 
-    // accessors for the first n dimensions
-    int  x() const noexcept { return x_; }
-    int& x() noexcept       { return x_; }
-    int  y() const noexcept { return y_; }
-    int& y() noexcept       { return y_; }
-    // int  z() const noexcept { return z_; }
-    // int& z() noexcept       { return z_; }
-
-    // 
     int operator[](size_t i) const noexcept {
-        return (i == 0) ? x_ : y_;
+        return e_[i];
     }
     int& operator[](size_t i) noexcept {
-        return (i == 0) ? x_ : y_;   
+        return e_[i];
     }
 
     friend bool operator==(const point& a, const point& b) {
-        return a.x_ == b.x_ && a.y_ == b.y_;
+        return a.e_ == b.e_;
     }
-
+    friend bool operator!=(const point& a, const point& b) {
+        return !(a == b);
+    }
+    friend point<DIMENSIONS> operator-(const point<DIMENSIONS>& a, const point<DIMENSIONS>& b) {
+        point<DIMENSIONS> tmp;
+        for(size_t i = 0; i < size(); ++i) {
+            tmp[i] = a[i] - b[i];
+        }
+        return tmp;
+    }
     double distance_norm(const point& other) const {
-        double dx = static_cast<double>(x_ - other.x_);
-        double dy = static_cast<double>(y_ - other.y_);
-        double res = (dx * dx) + (dy * dy);
-        if (std::isnan(res)) {
-            std::cerr << "nan! for ref: " << (*this) << " other: " << other 
-                      << " dx: " << dx << " dy: " << dy 
-                      << std::endl;
+        double res = 0.0;
+        for(size_t i = 0; i < DIMENSIONS; ++i) {
+            double dd = static_cast<double>(operator[](i) - other[i]);
+            res += dd * dd;
         }
         return res;
     }
     friend std::ostream& operator<<(std::ostream& o, const point& p) {
-        return o << '(' << p.x_ << "; " << p.y_ << ')';
-    }
-};
-
-using point_vector = std::vector<point>;
-using point_it     = point_vector::iterator;
-
-std::ostream& operator<<(std::ostream& o, const point_vector& pv) {
-    o << '{';
-    if (pv.size() > 0)
-        o << pv[0];
-    for (point_vector::size_type i = 1; i < pv.size(); ++i) {
-        o << "; " << pv[i];
-    }
-    o << '}';
-    return o;
-}
-
-struct rect {
-    point min_, max_;
-    friend std::ostream& operator<<(std::ostream& o, const rect& p) {
-        return o << '[' << p.min_ << "; " << p.max_ << ']';
+        o << '(' << p[0];
+        for(size_t i = 1; i < DIMENSIONS; ++i) o << "; " << p[i];
+        return o << ')';
     }
 };
 
@@ -102,19 +89,23 @@ T median_le(T start, T end, size_t dim) {
     return m;
 }
 
+template<size_t DIMENSIONS = 2>
 struct kdtree {
     static const size_t NOCHILD = std::numeric_limits<size_t>::max();
+    static size_t dimensions() noexcept { return DIMENSIONS; }
+    using point_type = point<DIMENSIONS>;
+
     struct kdnode {
-        point p_;
+        point_type p_;
         int operator[](size_t i) const noexcept {
             return p_[i];
         }
         size_t left_ { NOCHILD }, right_ {NOCHILD};
-        kdnode& operator=(const point& p) {
+        kdnode& operator=(const point_type& p) {
             p_ = p;
         }
         unsigned depth_ { 0 };
-        unsigned dim() const noexcept { return depth_ % 2; }
+        unsigned dim() const noexcept { return depth_ % DIMENSIONS; }
         friend std::ostream& operator<<(std::ostream& o, const kdtree::kdnode& n) {
             o << "{" << n.p_ << ", " ;
             if (n.left_ == NOCHILD)
@@ -157,18 +148,19 @@ struct kdtree {
         std::cout << "root: " << root_ << std::endl;
     }
     struct search_def {
-        explicit search_def(const point& p, size_t max_results = 1
+        explicit search_def(const kdtree::point_type& p, size_t max_results = 1
                           , double max_distance = std::numeric_limits<double>::infinity()) 
         : ref_{p}, max_results_{max_results}, max_distance_norm_ { max_distance * max_distance }
         {}
         search_def(const search_def&) = default;
         search_def& operator=(const search_def&) = default;
-        const point ref_;  // point to search for ( reference point )
+        const kdtree::point_type ref_;  // point to search for ( reference point )
         struct result_type {
             result_type() = default;
-            result_type(point const* p, const double& distance_norm) : p_{p}, distance_norm_{distance_norm}
+            result_type(kdtree::point_type const* p, const double& distance_norm) 
+            : p_{p}, distance_norm_{distance_norm}
             {}
-            point const* p_ { nullptr };               // const pointer to point
+            kdtree::point_type const* p_ { nullptr };               // const pointer to point
             double distance_norm_ { std::numeric_limits<double>::max() };         // distance norm
             double distance() const noexcept { return std::sqrt(distance_norm_);}
         };
@@ -192,7 +184,7 @@ struct kdtree {
                 return search_def::CONSIDER::APPEND;
             return search_def::CONSIDER::NOT;   
         }
-        void check_insert_result(point const * p, double distance_norm) {
+        void check_insert_result(kdtree::point_type const * p, double distance_norm) {
             auto consider = consider_check(distance_norm);
             switch(consider) {
                 case search_def::CONSIDER::REPLACE:
@@ -235,7 +227,7 @@ struct kdtree {
             return o;
         }
     };
-    search_def nearest_neighbours(const point& ref, size_t max_results = 1
+    search_def nearest_neighbours(const point_type& ref, size_t max_results = 1
                                 , double max_distance = std::numeric_limits<double>::max()) {
         search_def search (ref, max_results, max_distance);
         if ( root_ == NOCHILD )
@@ -251,7 +243,7 @@ protected:
     size_t buildtree(decltype(t_.begin()) begin, decltype(t_.begin()) end, unsigned depth) {
         if (begin == end)
             return NOCHILD;
-        auto m = median_le(begin, end, depth % 2);
+        auto m = median_le(begin, end, depth % DIMENSIONS);
         auto ret = std::distance(t_.begin(), m);
         auto dp1 = depth + 1;
         m->depth_ = depth;
@@ -266,7 +258,7 @@ protected:
             return;
         ++search.nodes_visited_;
         kdtree::kdnode& n = t_[node_idx];
-        auto i = depth % 2;
+        auto i = depth % DIMENSIONS;
         auto d = search.ref_.distance_norm(n.p_);
         search.check_insert_result(&n.p_, d);
         double plane_dist  = n.p_[i] - search.ref_[i];
