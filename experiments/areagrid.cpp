@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <tuple>
+#include <algorithm>
+#include <vector>
 #include <boost/format.hpp>
 
 struct EquiDistRange {
@@ -32,9 +34,9 @@ struct EquiDistRange {
         bool operator<=(const Iterator& b) const { return index_ <= b.index_; }
         bool operator>(const Iterator& b) const { return index_ > b.index_; }
         bool operator>=(const Iterator& b) const { return index_ >= b.index_; }
-        Iterator& operator++() { ++index_; }
+        Iterator& operator++() { ++index_; return *this; }
         Iterator operator++(int) { auto tmp = *this; ++index_; return tmp; }
-        Iterator& operator--() { --index_; }
+        Iterator& operator--() { --index_; return *this; }
         Iterator operator--(int) { auto tmp = *this; --index_; return tmp; }
         int operator*() { return r_[index_]; }
     };
@@ -121,10 +123,10 @@ struct Rect {
 
 class Randomizer {
 public:
-  Randomizer(unsigned area_width  = 1000
-           , unsigned area_height = 1000
-           , unsigned max_width   =  200
-           , unsigned max_height  =  200) 
+  Randomizer(unsigned area_width  = 1'000'000
+           , unsigned area_height = 1'000'000
+           , unsigned max_width   =  200'000
+           , unsigned max_height  =  200'000) 
   : distx(0, area_width - 1)
   , disty(0, area_height - 1)
   , max_width_{max_width}
@@ -153,6 +155,9 @@ private:
 };
 
 struct RectScale {
+    const Rect bounds_;
+    const unsigned width_, height_;
+    const double fx_, fy_;
     RectScale(const Rect& bounds, unsigned width = 100, unsigned height = 100)
     : bounds_{bounds}
     , width_{width}
@@ -160,9 +165,6 @@ struct RectScale {
     , fx_{width_/static_cast<double>(bounds_.width())}
     , fy_{height_/static_cast<double>(bounds_.height())}
     {}
-    const Rect bounds_;
-    const unsigned width_, height_;
-    const double fx_, fy_;
     Rect operator()(const Rect& r) const {
         return Rect{
             static_cast<int>(std::floor(fx_ * ( r.min.x - bounds_.min.x)))
@@ -250,51 +252,67 @@ namespace std
 
 class VRectGrid {
 public:
-  using set_t = std::unordered_set<VRect>;
+  using it_t  = std::vector<VRect>::size_type;
+  using set_t = std::unordered_set<it_t>;
   using map_t = std::unordered_map<Point, set_t>;
   template<typename T>
   VRectGrid(const RectScale& scale, T begin, const T end);
-  const set_t& operator()(int x, int y);
-  const set_t& operator()(const Point&);
+  // const set_t& operator()(int x, int y);
+  // const set_t& operator()(const Point&);
+  size_t rects_containing(const Point&, std::vector<VRect>& result);
   const RectScale scale_;
 private:
   map_t map_;
+  const std::vector<VRect> vec_;
 };
 
 template<typename T>
 VRectGrid::VRectGrid(const RectScale& scale, T begin, const T end)
-: scale_{scale}
+: scale_{scale}, vec_(begin, end)
 {
   for(int y = 0; y <= scale_.height_ + 1; ++y) {
     for(int x = 0; x <= scale_.width_ + 1; ++x) {
       Point p{x, y};
       set_t set;
-      for(auto it = begin; it != end; ++it) {
-        if (scale_(it->r).contains(p)) {
-          set.insert(*it);
+      for(size_t i = 0; i < vec_.size(); ++i) {
+        if (scale_(vec_[i].r).contains(p)) {
+          set.insert(i);
         }
       }
       map_.insert({p, set});
     }
   }
 }
-const VRectGrid::set_t& VRectGrid::operator()(const Point& p) {
-  return map_[scale_(p)];
-}
-const VRectGrid::set_t& VRectGrid::operator()(int x, int y) {
-  return this->operator()(Point{x, y});
-}
-std::ostream& operator<<(std::ostream& o, VRectGrid& g) {
-  boost::format fmt{"%3d"};
-  for(int y = g.scale_.height_ + 1; y >= 0; --y) {
-    for(int x = 0; x <= g.scale_.width_ + 1; ++x) {
-      auto s = g(x, y).size();
-      std::cout << fmt % s << " ";
+// const VRectGrid::set_t& VRectGrid::operator()(const Point& p) {
+//   return map_[scale_(p)];
+// }
+// const VRectGrid::set_t& VRectGrid::operator()(int x, int y) {
+//   return this->operator()(Point{x, y});
+// }
+size_t VRectGrid::rects_containing(const Point& p, std::vector<VRect>& result) {
+  size_t ret = 0;
+  decltype(auto) res = map_[scale_(p)];
+  std::cout << "Checking " << res.size() << " VRects" << std::endl;
+  for(const auto& e : res) {
+    if (vec_[e].r.contains(p)) {
+      ++ret;
+      result.push_back(vec_[e]);
     }
-    std::cout << std::endl;
   }
-  return o;
+  return ret;
 }
+
+// std::ostream& operator<<(std::ostream& o, VRectGrid& g) {
+//   boost::format fmt{"%3d"};
+//   for(int y = g.scale_.height_ + 1; y >= 0; --y) {
+//     for(int x = 0; x <= g.scale_.width_ + 1; ++x) {
+//       auto s = g(x, y).size();
+//       std::cout << fmt % s << " ";
+//     }
+//     std::cout << std::endl;
+//   }
+//   return o;
+// }
 
 int main() {
   using namespace std;
@@ -344,16 +362,19 @@ int main() {
   //   cout << i << ", ";
   // }
   // cout << endl;
-  RectScale scale(bounds, 20, 20);
+  RectScale scale(bounds, 30, 30);
   VRectGrid vrg{scale, rs.begin(), rs.end()};
   Point p;
-  for(int i = 0; i < 10; ++i) {
+  std::vector<VRect> res;
+  for(int i = 0; i < 20; ++i) {
+    res.resize(0);
     rnd(p);
-    cout << "**** Loopkup " << p << endl;
-    for(auto& e : vrg(p)) {
-      cout << e << " " << e.r.contains(p) << endl;
-    }
+    cout << "**** Loopkup " << p 
+         << ": " << vrg.rects_containing(p, res) << "VRects:" 
+         << endl;
+    print_all(res);
   }
   cout << "*******" << endl;
-  cout << vrg;
+  // std::string bla;
+  // cin >> bla;
 }

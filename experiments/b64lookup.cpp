@@ -118,3 +118,60 @@ int main(int argc, char const *argv[])
     cout << input << " -> " << output << endl;
     return 0;
 }
+
+/*
+
+#include <iostream>
+#include <algorithm>
+#include <numeric>
+#include <array>
+using namespace std;
+
+template<typename T>
+void build_alpha(T& buffer) {
+    auto begin = buffer.begin();
+    auto fill = [&begin](char start, char last) {
+        auto end = begin + (last - start) + 1;
+        std::iota(begin, end, start);
+        begin = end;
+    };
+    fill('A', 'Z');
+    fill('a', 'z');
+    fill('0', '9');
+    *(begin++) = '+';
+    *(begin++) = '/';
+}
+
+template<typename T, size_t N>
+ostream& print_array(ostream& o, const array<T, N>& t) {
+    for(size_t i = 0; i < t.size(); ++i) {
+        cout << '\'' << t[i] << '\'';
+        auto m = i % 16;
+        const char* sep = ", ";
+        switch(m) {
+            case 3: //fallthrough
+            case 11: sep = ",  "; break;
+            case 7: sep = ",   "; break;
+            case 15: sep = ",\n"; break;
+        }
+        cout << sep;
+    }
+}
+
+constexpr const array<const char, 64> al {
+    'A', 'B', 'C', 'D',  'E', 'F', 'G', 'H',   'I', 'J', 'K', 'L',  'M', 'N', 'O', 'P',                                                               
+    'Q', 'R', 'S', 'T',  'U', 'V', 'W', 'X',   'Y', 'Z', 'a', 'b',  'c', 'd', 'e', 'f',                                                               
+    'g', 'h', 'i', 'j',  'k', 'l', 'm', 'n',   'o', 'p', 'q', 'r',  's', 't', 'u', 'v',                                                               
+    'w', 'x', 'y', 'z',  '0', '1', '2', '3',   '4', '5', '6', '7',  '8', '9', '+', '/'
+};
+
+int main()
+{
+   array<char, 64> buffer;
+   build_alpha(buffer);
+   print_array(cout, buffer);
+   print_array(cout, al);
+   return 0;
+}
+
+*/
