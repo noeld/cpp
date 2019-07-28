@@ -13,7 +13,7 @@
 // }
 
 point<> rctest[] {{2, 3}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}};
-point<3> rct3[] {{0, 0, 0}, {7, 0, 0}, {0, 7, 0}, {0, 0, 7}, {4, 4, 4}, {7, 7, 7}};
+point<int, 3> rct3[] {{0, 0, 0}, {7, 0, 0}, {0, 7, 0}, {0, 0, 7}, {4, 4, 4}, {7, 7, 7}};
 
 struct KDFixture {
     KDFixture() {
@@ -28,8 +28,8 @@ struct KD3Fixture {
     KD3Fixture() {
         t3.build(std::begin(rct3), std::end(rct3));
     }
-    kdtree<3> t3;
-    const point<3> rc_reference { 4, 4, 4 };
+    kdtree<int, 3> t3;
+    const kdtree<int, 3>::point_type rc_reference { 4, 4, 4 };
 };
 
 BOOST_FIXTURE_TEST_SUITE(KDSuitem, KDFixture) 
@@ -107,7 +107,7 @@ BOOST_FIXTURE_TEST_SUITE(Dim3Test, KD3Fixture)
     {
         auto r1 = t3.nearest_neighbours(rc_reference);
         BOOST_CHECK_EQUAL(1, r1.results_.size());
-        point<3> r { 4, 4, 4 };
+        point<int, 3> r { 4, 4, 4 };
         BOOST_CHECK_EQUAL(*r1.results_[0].p_, r);
     }
 

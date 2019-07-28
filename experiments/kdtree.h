@@ -1,3 +1,4 @@
+#pragma once
 // http://www.rosettacode.org/wiki/K-d_tree
 
 // TODO:
@@ -6,9 +7,9 @@
 // [x] add max_distance search parameter
 // [x] add support for dimensions > 2
 // [ ] add support for vectorization
-// [ ] add support for other dimensions types than int
+// [x] add support for other dimensions types than int
 // [ ] add meta information to point (payload)
-// [ ] cleanup, remove old code
+// [x] cleanup, remove old code
 // [ ] add ability to add and remove points, rebuild tree
 // [ ] proper documentation (doxygen?)
 // [ ] add proper command line options (boost)
@@ -16,6 +17,8 @@
 // [ ] add README.md
 // [x] add unit tests (boost)
 // [x] split into header-only kd-tree and test-cases / sample app
+// [x] add find_containing_hyper_rect (point<T, n> IN point<T, n * 2>)
+// [ ] add find-strategies interface
 
 #include <iostream>
 #include <array>
@@ -27,24 +30,28 @@
 #include <initializer_list>
 #include "timemeasure.h"
 
-template<size_t DIMENSIONS = 2>
+template<typename DIM_TYPE = int, size_t DIMENSIONS = 2>
 struct point {
-    static size_t size() noexcept { return DIMENSIONS; };
+    static constexpr size_t size() noexcept { return DIMENSIONS; };
+    using value_type = DIM_TYPE;
+    using element_type = std::array<value_type, DIMENSIONS>;
 private:
-    using element_type = std::array<int, DIMENSIONS>;
     element_type e_;
 public:
     point() = default;
-    point(std::initializer_list<int> list) {
+    point(const std::initializer_list<value_type>& list) {
         std::copy_n(std::begin(list), DIMENSIONS, std::begin(e_));
     }
+    // template<typename Ts ...>
+    // point(Ts&& ... ts) : e_ { std::forward<Ts>(ts)... } {}
+
     point(const point&) = default;
     point& operator=(const point&) = default;
 
-    int operator[](size_t i) const noexcept {
+    value_type operator[](size_t i) const noexcept {
         return e_[i];
     }
-    int& operator[](size_t i) noexcept {
+    value_type& operator[](size_t i) noexcept {
         return e_[i];
     }
 
@@ -54,10 +61,10 @@ public:
     friend bool operator!=(const point& a, const point& b) {
         return !(a == b);
     }
-    friend point<DIMENSIONS> operator-(const point<DIMENSIONS>& a, const point<DIMENSIONS>& b) {
-        point<DIMENSIONS> tmp;
+    point operator-(const point& b) {
+        point tmp;
         for(size_t i = 0; i < size(); ++i) {
-            tmp[i] = a[i] - b[i];
+            tmp[i] = this->operator[](i) - b[i];
         }
         return tmp;
     }
@@ -89,15 +96,16 @@ T median_le(T start, T end, size_t dim) {
     return m;
 }
 
-template<size_t DIMENSIONS = 2>
+template<typename DIM_TYPE = int, size_t DIMENSIONS = 2>
 struct kdtree {
     static const size_t NOCHILD = std::numeric_limits<size_t>::max();
-    static size_t dimensions() noexcept { return DIMENSIONS; }
-    using point_type = point<DIMENSIONS>;
+    static constexpr size_t dimensions() noexcept { return DIMENSIONS; }
+    using value_type = DIM_TYPE;
+    using point_type = point<value_type, DIMENSIONS>;
 
     struct kdnode {
         point_type p_;
-        int operator[](size_t i) const noexcept {
+        value_type operator[](size_t i) const noexcept {
             return p_[i];
         }
         size_t left_ { NOCHILD }, right_ {NOCHILD};
@@ -152,9 +160,13 @@ struct kdtree {
                           , double max_distance = std::numeric_limits<double>::infinity()) 
         : ref_{p}, max_results_{max_results}, max_distance_norm_ { max_distance * max_distance }
         {}
+
         search_def(const search_def&) = default;
+
         search_def& operator=(const search_def&) = default;
+
         const kdtree::point_type ref_;  // point to search for ( reference point )
+
         struct result_type {
             result_type() = default;
             result_type(kdtree::point_type const* p, const double& distance_norm) 
@@ -164,19 +176,27 @@ struct kdtree {
             double distance_norm_ { std::numeric_limits<double>::max() };         // distance norm
             double distance() const noexcept { return std::sqrt(distance_norm_);}
         };
+
         std::vector<result_type> results_; // result vector
+
         static bool cmp(const result_type& a, const result_type& b) {
             return a.distance_norm_ < b.distance_norm_;
         };
+
         size_t max_results_ { 1 };  // return nearest max_results points
+        
         double max_distance_norm_;  // return all points up to this distance
+        
         bool is_full() const noexcept { return results_.size() == max_results_; }
+        
         double max_best_distance_norm() const noexcept {
             if (results_.size() == 0)
                 return std::numeric_limits<double>::infinity();
             return results_[0].distance_norm_; 
         }
+
         enum class CONSIDER { NOT, REPLACE, APPEND };
+
         search_def::CONSIDER consider_check(double distance_norm) const noexcept {
             if (is_full() && distance_norm < max_best_distance_norm())
                 return search_def::CONSIDER::REPLACE;
@@ -184,6 +204,7 @@ struct kdtree {
                 return search_def::CONSIDER::APPEND;
             return search_def::CONSIDER::NOT;   
         }
+
         void check_insert_result(kdtree::point_type const * p, double distance_norm) {
             auto consider = consider_check(distance_norm);
             switch(consider) {
@@ -207,7 +228,9 @@ struct kdtree {
         void sort_results() {
             std::sort_heap(results_.begin(), results_.end(), cmp);
         }
+
         unsigned nodes_visited_ { 0 };  // number of nodes visited during search
+
         friend std::ostream& operator<<(std::ostream& o, const search_def& sd) {
             o << "Reference point: " << sd.ref_
               << " max results: " << sd.max_results_ 
@@ -227,8 +250,10 @@ struct kdtree {
             return o;
         }
     };
+
     search_def nearest_neighbours(const point_type& ref, size_t max_results = 1
-                                , double max_distance = std::numeric_limits<double>::max()) {
+                                , double max_distance = std::numeric_limits<double>::max()) 
+    {
         search_def search (ref, max_results, max_distance);
         if ( root_ == NOCHILD )
             return search;
@@ -236,9 +261,72 @@ struct kdtree {
         search.sort_results();
         return search;
     }
-    private:
-        std::vector<kdtree::kdnode> t_;
-        size_t root_ { NOCHILD };
+
+    using contained_point_type = point<typename point_type::value_type, point_type::size() / 2>;
+    std::vector<point_type const *> containing_hyperrects(const contained_point_type& ref, size_t max_results = 1) 
+    {
+        std::vector<point_type const *> result;
+        // search_def search (ref, max_results, std::numeric_limits<double>::max());
+        // auto contained = [ref](const point_type& p, size_t dim) -> int {
+        //     auto d = 
+        // }
+        unsigned nodes_visited { 0 };
+        unsigned depth { 0 };
+        struct status_type { size_t node_idx_; unsigned depth_; };
+        std::vector<status_type> stack;
+        stack.push_back({root_, 0u});
+        while(stack.size() > 0) {
+            auto const& ctx = stack.back();
+            stack.pop_back();
+            if (ctx.node_idx_ != NOCHILD)
+            {
+                ++nodes_visited;
+                kdtree::kdnode& current_node = t_[ctx.node_idx_]; 
+                bool contained { true };
+                for(size_t i = 0; i < DIMENSIONS / 2; ++i) {
+                    contained = 
+                    contained && ref[i] >= current_node.p_[i] 
+                              && ref[i] <= current_node.p_[i + contained_point_type::size()]
+                    ;
+                }
+                if (contained) {
+                    result.push_back(&current_node.p_);
+                    if (result.size() >= max_results)
+                        break;
+                    stack.push_back({current_node.right_, ctx.depth_ + 1});
+                    stack.push_back({current_node.left_, ctx.depth_ + 1});
+                } else {
+                    auto dim = ctx.depth_ % DIMENSIONS;
+                    auto dim2 = ctx.depth_ % contained_point_type::size();
+                    auto dist = current_node.p_[dim] - ref[dim2];
+                    if (dim == dim2) {
+                        // looking at the lower bound dims
+                        stack.push_back({current_node.left_, ctx.depth_ + 1});
+                        if (dist <= 0) {
+                            // current nodes lower bound is left of ref
+                            // cannot skip right subtree
+                            stack.push_back({current_node.right_, ctx.depth_ + 1});
+                        }
+                    } else {
+                        // looking at the upper bound dims
+                        stack.push_back({current_node.right_, ctx.depth_ + 1});
+                        if (dist > 0) {
+                            // current nodes upper bound is right of ref
+                            // cannot skip left subtree
+                            stack.push_back({current_node.left_, ctx.depth_ + 1});
+                        }
+                    }
+                }
+            }
+        }
+        std::cout << "Nodes visited: " << nodes_visited << std::endl;
+        return result;
+    }
+
+private:
+    std::vector<kdtree::kdnode> t_;
+    size_t root_ { NOCHILD };
+
 protected:
     size_t buildtree(decltype(t_.begin()) begin, decltype(t_.begin()) end, unsigned depth) {
         if (begin == end)
@@ -253,6 +341,7 @@ protected:
         m->right_ = rm;
         return ret;
     }
+
     void find_nearest_neighbours(search_def& search, size_t node_idx, unsigned depth) {
         if (node_idx == NOCHILD)
             return;

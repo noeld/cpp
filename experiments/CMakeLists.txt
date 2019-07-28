@@ -50,7 +50,7 @@ add_executable(mmap mmap.cpp)
 
 add_executable(simplebtree simplebtree.cpp)
 
-set(KDTSOURCES timemeasure.h kdtree.h kdtree.cpp)
+set(KDTSOURCES timemeasure.h kdtree.h kdtree.cpp kdrandom.h)
 add_executable(kdtree ${KDTSOURCES})
 # add_library(kdtree ${KDTSOURCES})
 
