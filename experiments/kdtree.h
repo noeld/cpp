@@ -8,7 +8,7 @@
 // [x] add support for dimensions > 2
 // [ ] add support for vectorization
 // [x] add support for other dimensions types than int
-// [ ] add meta information to point (payload)
+// [x] add meta information to point (payload)
 // [x] cleanup, remove old code
 // [ ] add ability to add and remove points, rebuild tree
 // [ ] proper documentation (doxygen?)
@@ -28,18 +28,34 @@
 #include <utility>
 #include <limits>
 #include <initializer_list>
+#include <tuple>
+#include <utility>
 #include "timemeasure.h"
 
-template<typename DIM_TYPE = int, size_t DIMENSIONS = 2>
+struct empty_info_type {
+    friend std::ostream& operator<<(std::ostream& o, const empty_info_type&) {
+        return o << "EIT";
+    }
+};
+
+template<typename DIM_TYPE = int, size_t DIMENSIONS = 2, typename Info = empty_info_type>
 struct point {
     static constexpr size_t size() noexcept { return DIMENSIONS; };
     using value_type = DIM_TYPE;
     using element_type = std::array<value_type, DIMENSIONS>;
+    using info_type = Info;
+
+    info_type info_;
 private:
     element_type e_;
 public:
     point() = default;
     point(const std::initializer_list<value_type>& list) {
+        std::copy_n(std::begin(list), DIMENSIONS, std::begin(e_));
+    }
+    point(const Info& i, const std::initializer_list<value_type>& list) 
+    : info_{i}
+    {
         std::copy_n(std::begin(list), DIMENSIONS, std::begin(e_));
     }
     // template<typename Ts ...>
@@ -79,7 +95,7 @@ public:
     friend std::ostream& operator<<(std::ostream& o, const point& p) {
         o << '(' << p[0];
         for(size_t i = 1; i < DIMENSIONS; ++i) o << "; " << p[i];
-        return o << ')';
+        return o << ": " << p.info_ << ')';
     }
 };
 
@@ -96,12 +112,13 @@ T median_le(T start, T end, size_t dim) {
     return m;
 }
 
-template<typename DIM_TYPE = int, size_t DIMENSIONS = 2>
+template<typename DIM_TYPE = int, size_t DIMENSIONS = 2, typename INFO_TYPE = empty_info_type>
 struct kdtree {
     static const size_t NOCHILD = std::numeric_limits<size_t>::max();
     static constexpr size_t dimensions() noexcept { return DIMENSIONS; }
     using value_type = DIM_TYPE;
-    using point_type = point<value_type, DIMENSIONS>;
+    using info_type  = INFO_TYPE;
+    using point_type = point<value_type, DIMENSIONS, INFO_TYPE>;
 
     struct kdnode {
         point_type p_;

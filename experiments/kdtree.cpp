@@ -2,8 +2,9 @@
 
 #include "kdtree.h"
 #include "kdrandom.h"
+#include <string>
 
-using kdtree_type = kdtree<int, 2>;
+using kdtree_type = kdtree<int, 2, std::string>;
 using point_type = kdtree_type::point_type;
 using point_vector = std::vector<point_type>;
 
@@ -76,7 +77,7 @@ int main(int argc, char const *argv[])
         // test from rosetta code
         // http://www.rosettacode.org/wiki/K-d_tree
         std::cout << "Rosetta code test (http://www.rosettacode.org/wiki/K-d_tree)" << std::endl;
-        point_type rctest[] {{2, 3}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}};
+        point_type rctest[] {{"1", {2, 3}}, {"2", {5, 4}}, {"3", {9, 6}}, {"4", {4, 7}}, {"der hier", {8, 1}}, {"6", {7, 2}}};
         rct.build(std::begin(rctest), std::end(rctest));
         rct.print();
         point_type rcp { 9, 2 };
@@ -88,10 +89,11 @@ int main(int argc, char const *argv[])
     {
 
         // test contains
-        std::vector<point_type> test(num_points);
-        auto const range = num_points * 100;
+        kdtree tt;
+        std::vector<kdtree<>::point_type> test(num_points);
+        auto const range = num_points * 10;
         auto const extend = num_points / 10;
-        random_generator<point_type> rg(range);
+        random_generator<kdtree<>::point_type> rg(range);
         for(auto& e : test) {
             rg(e);
             for(size_t i = 0; i < kdtree_type::contained_point_type::size(); ++i) {
@@ -102,7 +104,6 @@ int main(int argc, char const *argv[])
                     e[ii] = e[i] + extend;
             }
         }
-        kdtree tt;
         tt.build(std::begin(test), std::end(test));
         if (num_points <= 10)
             tt.print();
