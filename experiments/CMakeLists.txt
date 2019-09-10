@@ -39,6 +39,8 @@ target_link_libraries(indexfile ${BOOST_LIBRARIES})
 
 add_executable(areagrid areagrid.cpp)
 
+add_executable(variadictemplates variadictemplates.cpp)
+
 
 #add_compile_options("-fopenmp")
 add_executable(mmap mmap.cpp)
