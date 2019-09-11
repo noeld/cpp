@@ -70,3 +70,5 @@ add_executable(roman roman.cpp)
 
 add_executable(iban iban.cpp)
 target_link_libraries(iban gmp)
+
+add_executable(ndimarray ndimarray.cpp)
