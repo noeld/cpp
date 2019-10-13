@@ -74,6 +74,7 @@ public:
     Vector& operator*=(const float_t& f) { this->x_ *= f; this->y_ *= f; return *this; }
     float_t operator*(const Vector& v) const { return this->x_ * v.x_ + this->y_ * v.y_; }
     float_t length() const { return std::sqrt( x_ * x_ + y_ * y_ ); }
+    float_t length_norm() const { return x_ * x_ + y_ * y_ ; }
     Vector& normalize() { *this *= 1/ length(); return *this; }
     Vector normalize_copy() { auto f = 1/ length(); return Vector(x_ * f, y_ * f); }
     float_t dist(const Vector& v) const { return (*this - v).length(); }

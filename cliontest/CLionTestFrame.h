@@ -14,7 +14,8 @@
 
 class CLionTestFrame : public wxFrame, PropertiesReaderWriter {
 public:
-    enum { ID_Menu_Start=1000, ID_Menu_Stop, ID_Menu_Restart, ID_Menu_Reload };
+    enum { ID_Menu_Start=1000, ID_Menu_Stop, ID_Menu_Restart, ID_Menu_Reload, ID_Menu_Refill
+        , ID_Menu_ForceField, ID_Menu_FF_Incr, ID_Menu_FF_Decr };
 
     CLionTestFrame();
 
@@ -51,6 +52,10 @@ private:
     void OnStart(wxCommandEvent &event);
 
     void OnReload(wxCommandEvent &);
+    void OnRefill(wxCommandEvent &);
+    void OnForceField(wxCommandEvent &);
+    void OnForceFieldIncr(wxCommandEvent &);
+    void OnForceFieldDecr(wxCommandEvent &);
 };
 
 

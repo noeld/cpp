@@ -86,6 +86,20 @@ void Universe::Initialize() {
     this->activeObjects = generate_n;
 }
 
+void Universe::Refill() {
+    PlanetGenerator gen(
+            DoubleRange(0.0, 0.0, generate_pos_xmax, generate_pos_ymax)
+            , generate_mass_alpha, generate_mass_beta
+            , generate_mass_min, generate_mass_max
+            , generate_pos_xmax, generate_pos_ymax
+            , generate_speed_min, generate_speed_max
+    );
+    for(size_t i = this->activeObjects; i < objects_.size(); ++i) {
+        gen.Generate(objects_[i]);
+    }
+    this->activeObjects = objects_.size();
+}
+
 void Universe::ReadProperties(const Properties &properties) {
     universe_g = properties.universe_g;
     universe_collision_joindist = properties.universe_collision_joindist;

@@ -20,9 +20,7 @@ PlanetGenerator::PlanetGenerator(const DoubleRange &posRange
         , minMass_(minMass), maxMass_(maxMass)
         , xmax_(xmax), ymax_(ymax)
         , minSpeed_ {minSpeed}, maxSpeed_{maxSpeed}
-{
-
-}
+{ }
 
 Planet &PlanetGenerator::Generate(Planet &p) {
     auto m = minMass_ + massDistribution_(generator_) * (maxMass_ - minMass_);

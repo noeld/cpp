@@ -39,6 +39,14 @@ unsigned Planet::Collide(Planet &a, Planet &b, const float_t& k, const float_t& 
         Planet::Join(a, b);
         return 1;
     }
+    // if both planets overlapp, relocate them along their distance vector
+    auto relocate_dist = a.getR() + b.getR() - dist_length;
+    if (relocate_dist > 0.0) {
+        auto rel_a = a.mass_ / (a.mass_ + b.mass_);
+        auto rel_b = b.mass_ / (a.mass_ + b.mass_);
+        a.pos_ += dist_vec * (rel_a * relocate_dist);
+        b.pos_ += dist_vec * (-rel_b * relocate_dist);
+    }
 //    auto r2 = a.getR() + b.getR() - dist_length;
 //    if (r2 > 0) {
 //        //Increase distance if planets overlapp

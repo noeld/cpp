@@ -37,6 +37,7 @@ public:
     void WriteProperties(Properties &properties) override;
 
     void Initialize();
+    void Refill();
 
     size_t getActiveObjects() const {
         return activeObjects;
