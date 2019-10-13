@@ -39,14 +39,6 @@ unsigned Planet::Collide(Planet &a, Planet &b, const float_t& k, const float_t& 
         Planet::Join(a, b);
         return 1;
     }
-    // if both planets overlapp, relocate them along their distance vector
-    auto relocate_dist = a.getR() + b.getR() - dist_length;
-    if (relocate_dist > 0.0) {
-        auto rel_a = a.mass_ / (a.mass_ + b.mass_);
-        auto rel_b = b.mass_ / (a.mass_ + b.mass_);
-        a.pos_ += dist_vec * (rel_a * relocate_dist);
-        b.pos_ += dist_vec * (-rel_b * relocate_dist);
-    }
 //    auto r2 = a.getR() + b.getR() - dist_length;
 //    if (r2 > 0) {
 //        //Increase distance if planets overlapp
@@ -56,18 +48,25 @@ unsigned Planet::Collide(Planet &a, Planet &b, const float_t& k, const float_t& 
     if (dist_vec * speed_delta > 0) {
         // Distance between Planets already increasing
         //dist_vec *= -1;
-        return 0;
+    } else {
+        auto ortho = dist_vec.orthogonal_copy();
+        auto ortho_force_a  = ortho * ( ortho * a.speed_ );
+        auto direct_force_a = dist_vec * ( dist_vec * a.speed_ );
+        auto ortho_force_b  = ortho * ( ortho * b.speed_ );
+        auto direct_force_b = dist_vec * ( dist_vec * b.speed_ );
+
+        auto mv1mv2 = direct_force_a * a.mass_ + direct_force_b * b.mass_;
+        a.speed_ = ortho_force_a + (mv1mv2 - (direct_force_a - direct_force_b) * (b.mass_ * k)) * ( 1 / (a.mass_ + b.mass_));
+        b.speed_ = ortho_force_b + (mv1mv2 - (direct_force_b - direct_force_a) * (a.mass_ * k)) * ( 1 / (a.mass_ + b.mass_));
     }
-    auto ortho = dist_vec.orthogonal_copy();
-    auto ortho_force_a  = ortho * ( ortho * a.speed_ );
-    auto direct_force_a = dist_vec * ( dist_vec * a.speed_ );
-    auto ortho_force_b  = ortho * ( ortho * b.speed_ );
-    auto direct_force_b = dist_vec * ( dist_vec * b.speed_ );
-
-    auto mv1mv2 = direct_force_a * a.mass_ + direct_force_b * b.mass_;
-    a.speed_ = ortho_force_a + (mv1mv2 - (direct_force_a - direct_force_b) * (b.mass_ * k)) * ( 1 / (a.mass_ + b.mass_));
-    b.speed_ = ortho_force_b + (mv1mv2 - (direct_force_b - direct_force_a) * (a.mass_ * k)) * ( 1 / (a.mass_ + b.mass_));
-
+    // if both planets overlapp, relocate them along their distance vector
+    auto relocate_dist = a.getR() + b.getR() - dist_length;
+    if (relocate_dist > 0.0) {
+        auto rel_a = a.mass_ / (a.mass_ + b.mass_);
+        auto rel_b = b.mass_ / (a.mass_ + b.mass_);
+        a.pos_ += dist_vec * (rel_a * relocate_dist);
+        b.pos_ += dist_vec * (-rel_b * relocate_dist);
+    }
     return 0;
 }
 
