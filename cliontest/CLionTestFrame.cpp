@@ -4,11 +4,13 @@
 
 #include "CLionTestFrame.h"
 
+#include <wx/dcbuffer.h>
+
 #include <boost/format.hpp>
 
 CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) {
     //CreateStatusBar();
-
+	this->SetDoubleBuffered(true);
     wxMenu* menuA = new wxMenu;
     menuA->Append(ID_Menu_Restart, "&Restart", "Restart universe with new, random setup");
     menuA->Append(ID_Menu_Refill, "Re&fill", "Refill universe with random planets ");
@@ -35,6 +37,9 @@ CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) 
     Bind(wxEVT_MENU, &CLionTestFrame::OnForceFieldDecr, this, ID_Menu_FF_Decr);
 
     SetSize(900, 600);
+	// https://wiki.wxwidgets.org/Flicker-Free_Drawing
+	Bind(wxEVT_ERASE_BACKGROUND, &CLionTestFrame::EmptyFunction, this, wxID_ANY); 
+
     Bind(wxEVT_PAINT, &CLionTestFrame::OnPaint, this, wxID_ANY);
     Bind(wxEVT_TIMER, &CLionTestFrame::OnTimer, this, wxID_ANY);
     prop_.AddReaderWriter(*this);
@@ -47,8 +52,14 @@ CLionTestFrame::CLionTestFrame() : wxFrame(NULL, wxID_ANY, "Hallo"), tim_(this) 
     Restart();
 }
 
+void CLionTestFrame::EmptyFunction(wxEraseEvent &event) {}
+
 void CLionTestFrame::OnPaint(wxPaintEvent &event) {
-    wxPaintDC dc(this);
+    //wxPaintDC odc(this);
+	//wxBufferedDC dc(&odc);
+	// https://wiki.wxwidgets.org/Flicker-Free_Drawing
+	wxBufferedPaintDC dc(this);
+	dc.Clear();
     // {
     //     // draw axis
     //     auto size = GetClientSize();

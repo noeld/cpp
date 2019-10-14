@@ -22,6 +22,7 @@ public:
     virtual ~CLionTestFrame();
 
 private:
+	void EmptyFunction(wxEraseEvent &);
     void OnPaint(wxPaintEvent &event);
     void OnTimer(wxTimerEvent &);
 

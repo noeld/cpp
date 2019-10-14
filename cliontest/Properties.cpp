@@ -76,7 +76,7 @@ bool Properties::WriteConfigFile(const std::string &filename) {
     def.put<double>(configname_ + ".generate.pos.xmax", generate_pos_xmax);
     def.put<double>(configname_ + ".generate.pos.ymax", generate_pos_ymax);
     def.put<bool>(configname_ + ".view.forcefield.show", view_forcefield_show);
-    def.put<unsigned>(configname_ + "view.forcefield.columns", view_forcefield_columns);
+    def.put<unsigned>(configname_ + ".view.forcefield.columns", view_forcefield_columns);
 
     boost::property_tree::write_json(Properties::filename_, def);
     return false;

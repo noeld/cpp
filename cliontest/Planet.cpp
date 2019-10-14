@@ -72,44 +72,24 @@ unsigned Planet::Collide(Planet &a, Planet &b, const float_t& k, const float_t& 
 
 
 void Planet::Join(Planet &a, Planet &b) {
-    Planet* big = &a;
-    Planet* small = &b;
-    if (small->getMass() > big->getMass()) {
-        std::swap(big, small);
+    Planet* big_planet = &a;
+    Planet* small_planet = &b;
+    if (small_planet->getMass() > big_planet->getMass()) {
+        std::swap(big_planet, small_planet);
     }
-    auto mm = big->getMass() + small->getMass();
-    auto dist_vec = big->pos_ - small->pos_;
-    auto f = small->getMass() / mm;
-    auto pp = big->pos_ + dist_vec * -f;
-    auto ss = big->speed_ * (big->getMass() / mm) + small->speed_ * (small->getMass() / mm);
+    auto mm = big_planet->getMass() + small_planet->getMass();
+    auto dist_vec = big_planet->pos_ - small_planet->pos_;
+    auto f = small_planet->getMass() / mm;
+    auto pp = big_planet->pos_ + dist_vec * -f;
+    auto ss = big_planet->speed_ * (big_planet->getMass() / mm) + small_planet->speed_ * (small_planet->getMass() / mm);
 
-    big->setRgb_(Planet::BlendWeightedRGB(big->getRgb_(), big->getMass(), small->getRgb_(), small->getMass()));
-    big->setPos(pp);
-    big->setSpeed(ss);
-    big->setActive(true);
-    small->setActive(false);
-    big->setMass(mm);
-/*
-var big = this;
-			var small = o;
-			if (small.m > this.m) {
-				big = o;
-				small = this;
-			}
-			var mm = big.m + small.m;
-			var rr = this.radiusFromMass(mm);
-			var d = big.pos.sub_copy(small.pos);
-			var dmagn = d.length();
-			var f = small.m / mm;
-			var pp = big.pos.add_copy(d.mul(-f));
-			var ss = big.speed.mul_copy(big.m / mm).add(small.speed.mul_copy(small.m / mm));
-			big.m = mm;
-			big.r = rr;
-			big.pos = pp;
-			big.speed = ss;
-			big.active = 1;
-			small.active = 0;
- * */
+    big_planet->setRgb_(Planet::BlendWeightedRGB(big_planet->getRgb_(), big_planet->getMass(), small_planet->getRgb_(), small_planet->getMass()));
+    big_planet->setPos(pp);
+    big_planet->setSpeed(ss);
+    big_planet->setActive(true);
+	small_planet->setActive(false);
+    big_planet->setMass(mm);
+
 }
 
 #define EXTRACTCOLOR(a, s, w) (static_cast<float_t>(((a) >> (s)) & 0xff) * w)
