@@ -64,10 +64,12 @@ struct frame_source {
 struct animation_cycle {
     explicit animation_cycle( unsigned cycle_duration_ms
                             , std::vector<std::string>&& filenames
+                            , v2d speed
                             , SDL_Renderer* renderer)
     : cycle_duration_ms_{cycle_duration_ms}
     , filenames_{std::forward<std::vector<std::string>>(filenames)}
     , texture_intervall_ms_{cycle_duration_ms / static_cast<unsigned>(filenames_.size())}
+    , speed_ { speed }
     {
         for(auto const& f: filenames_) {
             textures_.emplace_back(load_texture(f.c_str(), renderer));
@@ -84,6 +86,14 @@ struct animation_cycle {
     std::vector<texture_ptr> textures_;
     unsigned cycle_duration_ms_;
     unsigned texture_intervall_ms_;
+    v2d speed_;
+};
+
+struct animation_intervall {
+    animation_cycle* cycle;
+    unsigned start_ms_;
+    unsigned end_ms_;
+    v2d speed_;
 };
 
 const int SCREEN_WIDTH  =1280; 
@@ -100,7 +110,7 @@ int main(int argc, char const *argv[])
         , &SDL_DestroyWindow);
     renderer_ptr renderer
     (
-        SDL_CreateRenderer(window.get(), -1, SDL_RENDERER_ACCELERATED)
+        SDL_CreateRenderer(window.get(), -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
         , &SDL_DestroyRenderer
     );
     SDL_SetRenderDrawColor(renderer.get(), 0xff, 0xff, 0xff, 0xa0);
@@ -115,6 +125,7 @@ int main(int argc, char const *argv[])
                           , "../assets/dino/Walk (8).png"
                           , "../assets/dino/Walk (9).png"
                           , "../assets/dino/Walk (10).png"}
+                          , { 100.0f, 0.0f }
                           , renderer.get());
     animation_cycle dino_idle_cycle(2400, {
                             "../assets/dino/Idle (1).png"
@@ -127,6 +138,7 @@ int main(int argc, char const *argv[])
                           , "../assets/dino/Idle (8).png"
                           , "../assets/dino/Idle (9).png"
                           , "../assets/dino/Idle (10).png"}
+                          , { 0.0f, 0.0f }
                           , renderer.get());
     animation_cycle dino_run_cycle(600, {
                             "../assets/dino/Run (1).png"
@@ -137,6 +149,7 @@ int main(int argc, char const *argv[])
                           , "../assets/dino/Run (6).png"
                           , "../assets/dino/Run (7).png"
                           , "../assets/dino/Run (8).png"}
+                          , { 300.0f, 0.0f }
                           , renderer.get());
     animation_cycle dino_jump_cycle(1200, {
                             "../assets/dino/Jump (1).png"
@@ -151,7 +164,13 @@ int main(int argc, char const *argv[])
                           , "../assets/dino/Jump (10).png"
                           , "../assets/dino/Jump (11).png"
                           , "../assets/dino/Jump (12).png"}
+                          , { 300.0f, 0.0f }
                           , renderer.get());
+
+    auto new_intervall = [&](unsigned start_ms, animation_cycle* ac) -> animation_intervall {
+        return { ac, start_ms, start_ms + ac->cycle_duration_ms_, ac->speed_};
+    };
+
     texture_ptr background = load_texture("../assets/background.jpg", renderer.get());
     v2d dino_pos { 50, SCREEN_HEIGHT - 480 };
     v2d dino_speed;
@@ -160,8 +179,8 @@ int main(int argc, char const *argv[])
     int i = 0;
     auto last_ms = SDL_GetTicks();
     auto last_clk = std::chrono::high_resolution_clock::now();
-    animation_cycle* current_cycle = &dino_idle_cycle;
-    animation_cycle* next_cycle    = current_cycle;
+    animation_intervall current_intervall = new_intervall(last_ms, &dino_idle_cycle);
+    animation_cycle* next_cycle = current_intervall.cycle;
     
     unsigned cycle_start_ms = last_ms;
     // unsigned cycle_end_ms   = cycle_start_ms + 
@@ -196,31 +215,36 @@ int main(int argc, char const *argv[])
         bool jumping = key_state[SDL_SCANCODE_SPACE] == 1;
         
         if (jumping) {
-            current_cycle = &dino_jump_cycle;
-            cycle_start_ms = now_ms;
+            next_cycle = &dino_jump_cycle;
         }
         else if ( walking && running) {
-            current_cycle = &dino_run_cycle;
-            dino_speed = { 300.0f, 0.0f };
-            cycle_start_ms = now_ms;
+            next_cycle = &dino_run_cycle;
         }
         else if (walking) {
-            current_cycle = &dino_walk_cycle;
-            dino_speed = { 100.0f, 0.0f };
-            cycle_start_ms = now_ms;
-        } else if ( current_cycle != &dino_idle_cycle) {
-            current_cycle = &dino_idle_cycle;
-            dino_speed = { 0.0f, 0.0f };
-            cycle_start_ms = now_ms;
+            next_cycle = &dino_walk_cycle;
+        } else {
+            next_cycle = &dino_idle_cycle;
         }
-        auto frame = current_cycle->get_frame(now_ms);
-        dino_pos += dino_speed * diff_clk.count();
+        if (   current_intervall.cycle == & dino_idle_cycle 
+             || now_ms > current_intervall.end_ms_) {
+            // next animation intervall
+            current_intervall = new_intervall(now_ms, next_cycle);
+        }
+        auto frame = current_intervall.cycle->get_frame(now_ms);
+        dino_pos += current_intervall.speed_ * diff_clk.count();
 
         SDL_RenderClear(renderer.get());
-        SDL_Rect back_src { 0, 0, 1280, 720 };
-        SDL_Rect back_dst { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+        // SDL_Rect back_src { 0, 0, 1280, 720 };
+        int back_x = static_cast<int>(dino_pos.getX()) % SCREEN_WIDTH;
+        // SDL_Rect back_dst { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+        SDL_Rect back_src { back_x, 0, 1280 - back_x, 720 };
+        SDL_Rect back_dst { 0, 0, SCREEN_WIDTH - back_x, SCREEN_HEIGHT };
         SDL_RenderCopy(renderer.get(), background.get(), &back_src, &back_dst);
-        SDL_Rect dst {static_cast<int>(dino_pos.getX()) % SCREEN_WIDTH, SCREEN_HEIGHT - 480, 640 / 2, 480 / 2};
+        SDL_Rect back_src2 { 0, 0, back_x, 720 };
+        SDL_Rect back_dst2 { SCREEN_WIDTH - back_x, 0, back_x, SCREEN_HEIGHT };
+        SDL_RenderCopy(renderer.get(), background.get(), &back_src2, &back_dst2);
+        // SDL_Rect dst {static_cast<int>(dino_pos.getX()) % SCREEN_WIDTH, SCREEN_HEIGHT - 480, 640 / 2, 480 / 2};
+        SDL_Rect dst {100, SCREEN_HEIGHT - 480, 640 / 2, 480 / 2};
         SDL_RenderCopy(renderer.get(), frame.texture_, &frame.src_rect_, &dst);
         SDL_Rect br { 50 - 5, 700 - 5, 10 + static_cast<int>(40.0f * waf.avg() * 1000.0f), 50 + 10};
         SDL_BlendMode bm;
