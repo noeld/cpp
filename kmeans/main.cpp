@@ -11,6 +11,8 @@
 #include "group.h"
 #include "draw.h"
 
+
+
 struct generator
 {
 	std::random_device rd_;
@@ -85,9 +87,9 @@ void kmeans(unsigned clusters, std::vector<point_type> const & points
 				g.group_ = gi;
 			}
 		}
-		draw(points, groups);
+		draw2(points, groups);
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-	} while (changed_points > points.size() / 10);
+	} while (changed_points > points.size() * 0.01);
 }
 
 int main(int argc, char const *argv[])
@@ -103,6 +105,7 @@ int main(int argc, char const *argv[])
 	{
 		clusters = std::atoll(argv[2]);
 	}
+	GDIPlus gdiplus;
 	generator gen;
 	std::vector<center_info> centers;
 	std::vector<point_type> points(n);
@@ -111,11 +114,11 @@ int main(int argc, char const *argv[])
 
 	std::vector<group_info> groups(n);
 
-	draw(points, groups);
+	draw2(points, groups);
 
 	kmeans(clusters, points, groups, centers);
 
-	draw(points, groups);
+	draw2(points, groups);
 
 	std::this_thread::sleep_for(std::chrono::seconds(3));
 	return ret;
