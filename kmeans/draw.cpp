@@ -159,3 +159,68 @@ void draw2(std::vector<point_type> const & points
   graphics.DrawImage(&bmp, 0, 0);
   ReleaseDC(hwindow, dc);
 }
+
+void points_from_image(std::wstring const & file_name
+                  , std::vector<point_type> & points)
+{
+  using namespace Gdiplus;
+  Gdiplus::BitmapData bmpdata;
+  Bitmap bmp(file_name.c_str());
+  Gdiplus::Rect r(0,0, bmp.GetWidth(), bmp.GetHeight());
+  auto st = bmp.LockBits( &r
+    , ImageLockModeRead
+    , PixelFormat32bppARGB 
+    , &bmpdata
+    );
+  if (st != Ok)
+  {
+    std::cout << "LockBits ist nicht ok" << std::endl;
+  }
+  uint32_t* pixels = (uint32_t*)bmpdata.Scan0;
+  for(unsigned y = 0; y < bmpdata.Height; ++y)
+  {
+    auto p = pixels + y * (bmpdata.Stride >> 2);
+    for(unsigned x = 0; x < bmpdata.Width; ++x, ++p)
+    {
+      Color col(*p);
+      float fr = col.GetR() / 255.0f;
+      float fg = col.GetG() / 255.0f;
+      float fb = col.GetB() / 255.0f;
+      float c_max = fr;
+      float c_min = fr;
+      int col_max = 1;
+      if (fg > c_max)
+      {
+        col_max++;
+        c_max = fg;
+      }
+      if (fg < c_min)
+          c_min = fg;
+      if (fb > c_max)
+      {
+        col_max++;
+        c_max = fb;
+      }
+      if (fb < c_min)
+          c_min = fb;
+      const float deg60 = M_PI / 3.0f;
+      float h = 0.0f;
+      float delta = c_max - c_min;
+      if (delta > 0.0f)
+      {
+        switch(col_max) {
+          case 1: h = deg60 * std::fmod((fg - fb)/delta, 6.0f);
+            break;
+          case 2: h = deg60 * ((fb - fr)/delta + 2.0f);
+            break;
+          case 3: h = deg60 * ((fr - fg)/delta + 4.0f);
+            break;
+          default:
+            h = 0.0f;
+        }
+      }
+      points.push_back({c_max * std::cos(h), c_max * std::sin(h)});
+    }
+  }
+  bmp.UnlockBits(&bmpdata);
+}

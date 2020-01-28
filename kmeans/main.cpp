@@ -88,7 +88,7 @@ void kmeans(unsigned clusters, std::vector<point_type> const & points
 			}
 		}
 		draw2(points, groups);
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	} while (changed_points > points.size() * 0.01);
 }
 
@@ -108,11 +108,18 @@ int main(int argc, char const *argv[])
 	GDIPlus gdiplus;
 	generator gen;
 	std::vector<center_info> centers;
-	std::vector<point_type> points(n);
-	for(auto & e : points)
-		e = gen.random_point();
+	// std::vector<point_type> points(n);
+	std::vector<point_type> points;
+	
+	// auto file_name = L"C:\\Users\\Arnold\\Pictures\\down_wallpaper_f800r_02_1280x1024.jpg";
+	// auto file_name = L"C:\\Users\\Arnold\\Pictures\\Passfotos3.png";
+	auto file_name = L"C:\\Users\\Arnold\\Pictures\\_MG_1166.jpg";
+	
+	points_from_image(file_name, points);
+	// for(auto & e : points)
+	// 	e = gen.random_point();
 
-	std::vector<group_info> groups(n);
+	std::vector<group_info> groups(points.size());
 
 	draw2(points, groups);
 
@@ -120,6 +127,6 @@ int main(int argc, char const *argv[])
 
 	draw2(points, groups);
 
-	std::this_thread::sleep_for(std::chrono::seconds(3));
+	std::this_thread::sleep_for(std::chrono::seconds(5));
 	return ret;
 }
