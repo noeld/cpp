@@ -3,6 +3,10 @@
 #include "draw.h"
 #include "group.h"
 #include <iostream>
+#include <limits>
+
+#undef max
+#undef min
 
 GDIPlus::GDIPlus()
 {
@@ -46,55 +50,57 @@ void create_palette(std::vector<COLORREF>& cols)
   }
 }
 
-void draw(std::vector<point_type> const & points
- ,std::vector<group_info> const & groups)
-{
-  std::vector<COLORREF> cols;
-  create_palette(cols);
+// void draw(std::vector<point_type> const & points
+//  ,std::vector<group_info> const & groups)
+// {
+//   std::vector<COLORREF> cols;
+//   create_palette(cols);
 
-  elt_type min[2]  {std::numeric_limits<elt_type>::max(), std::numeric_limits<elt_type>::max()};
-  elt_type max[2]  {std::numeric_limits<elt_type>::min(), std::numeric_limits<elt_type>::min()};
-  for(auto const & e: points)
-  {
-    min[0] = std::min(min[0], e[0]);
-    min[1] = std::min(min[1], e[1]);
-    max[0] = std::max(max[0], e[0]);
-    max[1] = std::max(max[1], e[1]);
-  }
-  auto img_width = max[0] - min[0];
-  auto img_height = max[1] - min[1];
-    // std::cout << "img_width " << img_width << " img_height " << img_height << std::endl;
-  point_type center_point { (min[0] + max[0]) / 2, (min[1] + max[1]) / 2};
+//   elt_type min[2]  {std::numeric_limits<elt_type>::max(), std::numeric_limits<elt_type>::max()};
+//   elt_type max[2]  {std::numeric_limits<elt_type>::min(), std::numeric_limits<elt_type>::min()};
+//   for(auto const & e: points)
+//   {
+//     min[0] = std::min(min[0], e[0]);
+//     min[1] = std::min(min[1], e[1]);
+//     max[0] = std::max(max[0], e[0]);
+//     max[1] = std::max(max[1], e[1]);
+//   }
+//   auto img_width = max[0] - min[0];
+//   auto img_height = max[1] - min[1];
+//     // std::cout << "img_width " << img_width << " img_height " << img_height << std::endl;
+//   point_type center_point { (min[0] + max[0]) / 2, (min[1] + max[1]) / 2};
 
-  HWND hwindow = GetConsoleWindow();
-  WINDOWINFO wi;
-  GetWindowInfo(hwindow, &wi);
-  auto [top, left, width, height] = wi.rcClient;
-  elt_type scale = std::min(width, height) / std::max(img_width, img_height);
-    // std::cout << "scale " << scale << std::endl;
-    // std::cout << "group_cols_len " << group_cols_len << std::endl;
-    // std::cout.flush();
+//   HWND hwindow = GetConsoleWindow();
+//   WINDOWINFO wi;
+//   GetWindowInfo(hwindow, &wi);
+//   auto [top, left, width, height] = wi.rcClient;
+//   elt_type scale = std::min(width, height) / std::max(img_width, img_height);
+//     // std::cout << "scale " << scale << std::endl;
+//     // std::cout << "group_cols_len " << group_cols_len << std::endl;
+//     // std::cout.flush();
 
-  HDC dc = GetDC(hwindow);
-  size_t i = 0;
-  for (auto const & e : points)
-  {
-    int x = scale * (e[0] - center_point[0]) + width / 2;
-    int y = scale * (e[1] - center_point[1]) + height / 2;
-    auto gr = groups[i].group_;
-    auto col = cols[gr % cols.size()];
-    // std::cout << e << " -> x " << x << " y " << y << std::endl;
-    SetPixel(dc, x, y, col); // RGB(0xa0, 0x90, 0x90)
-    ++i;
-  }
-  ReleaseDC(hwindow, dc);
-}
+//   HDC dc = GetDC(hwindow);
+//   size_t i = 0;
+//   for (auto const & e : points)
+//   {
+//     int x = scale * (e[0] - center_point[0]) + width / 2;
+//     int y = scale * (e[1] - center_point[1]) + height / 2;
+//     auto gr = groups[i].group_;
+//     auto col = cols[gr % cols.size()];
+//     // std::cout << e << " -> x " << x << " y " << y << std::endl;
+//     SetPixel(dc, x, y, col); // RGB(0xa0, 0x90, 0x90)
+//     ++i;
+//   }
+//   ReleaseDC(hwindow, dc);
+// }
 
 /**
  * just like draw, but using Gdiplus
  */
 void draw2(std::vector<point_type> const & points
- ,std::vector<group_info> const & groups)
+ , std::vector<group_info> const & groups
+ , std::vector<center_info> * centers
+ , tf::Executor* executor)
 {
 
   std::vector<COLORREF> cols;
@@ -145,18 +151,50 @@ void draw2(std::vector<point_type> const & points
     pixels[(bmpdata.Stride >> 2) * y + x] = col;
   };
   size_t i = 0;
-  for (auto const & e : points)
-  {
-    int x = scale * (e[0] - center_point[0]) + width / 2;
-    int y = scale * (e[1] - center_point[1]) + height / 2;
-    auto gr = groups[i].group_;
-    auto col = cols[gr % cols.size()];
-    // std::cout << e << " -> x " << x << " y " << y << std::endl;
-    set_pixel(x, y, col); // RGB(0xa0, 0x90, 0x90)
-    ++i;
+  if (executor == nullptr) {
+    for (auto const & e : points)
+    {
+      int x = scale * (e[0] - center_point[0]) + width / 2;
+      int y = scale * (e[1] - center_point[1]) + height / 2;
+      auto gr = groups[i].group_;
+      auto col = cols[gr % cols.size()];
+      // std::cout << e << " -> x " << x << " y " << y << std::endl;
+      set_pixel(x, y, col); // RGB(0xa0, 0x90, 0x90)
+      ++i;
+    }
+  } else {
+    tf::Taskflow taskflow;
+    taskflow.parallel_for((int)0, (int)points.size(), 1, [&](int i) {
+      auto const & e = points[i];
+      int x = scale * (e[0] - center_point[0]) + width / 2;
+      int y = scale * (e[1] - center_point[1]) + height / 2;
+      auto gr = groups[i].group_;
+      auto col = cols[gr % cols.size()];
+      // std::cout << e << " -> x " << x << " y " << y << std::endl;
+      set_pixel(x, y, col); // RGB(0xa0, 0x90, 0x90)
+    }, 100000);
+    executor->run(taskflow).get();
   }
   bmp.UnlockBits(&bmpdata);
   graphics.DrawImage(&bmp, 0, 0);
+  if (centers != nullptr)
+  {
+	  // std::cout << "Drawing centers" << std::endl;
+	  i = 0;
+	  //Graphics img_graphics(&bmp);
+	  Pen pen(Color(0xff, 0xff, 0xff), 3);
+	  for (auto const & e : *centers)
+	  {
+		  int x = scale * (e.point_[0] - center_point[0]) + width / 2;
+		  int y = scale * (e.point_[1] - center_point[1]) + height / 2;
+		  auto col = cols[i % cols.size()];
+		  //pen.SetColor(Color(cols[i % cols.size()]));
+		  graphics.DrawLine(&pen, x - 5, y - 5, x + 5, y + 5);
+		  graphics.DrawLine(&pen, x - 5, y + 5, x + 5, y - 5);
+		  ++i;
+	  }
+	  //graphics.Flush();
+  }
   ReleaseDC(hwindow, dc);
 }
 

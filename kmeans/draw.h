@@ -5,6 +5,11 @@
 #include <vector>
 #include <windows.h>
 #include <Gdiplus.h>
+#include <taskflow/taskflow.hpp>
+
+#ifndef M_PI
+#define M_PI 3.1415926535897932384626433832795
+#endif // !M_PI
 
 
 struct  GDIPlus
@@ -17,11 +22,13 @@ struct  GDIPlus
 	ULONG_PTR           gdiplusToken;
 };
 
-void draw(std::vector<point_type> const & points
-	     ,std::vector<group_info> const & groups);
+// void draw(std::vector<point_type> const & points
+// 	     ,std::vector<group_info> const & groups);
 
 void draw2(std::vector<point_type> const & points
-	     ,std::vector<group_info> const & groups);
+	     , std::vector<group_info> const & groups
+	     , std::vector<center_info> * centers = nullptr
+	     , tf::Executor* executor = nullptr);
 
 /**
  * Retrieve point from an image:

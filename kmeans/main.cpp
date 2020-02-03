@@ -6,12 +6,15 @@
 #include<vector>
 #include<thread>
 #include<chrono>
+#include<algorithm>
 
 #include "point.h"
 #include "group.h"
 #include "draw.h"
 
+#include <taskflow/taskflow.hpp>
 
+#undef max
 
 struct generator
 {
@@ -27,11 +30,7 @@ struct generator
 	}
 };
 
-struct center_info
-{
-	point_type point_;
-	size_t count_ {0};
-};
+
 
 void kmeans(unsigned clusters, std::vector<point_type> const & points
 	       , std::vector<group_info> & groups
@@ -87,8 +86,71 @@ void kmeans(unsigned clusters, std::vector<point_type> const & points
 				g.group_ = gi;
 			}
 		}
-		draw2(points, groups);
+		draw2(points, groups, &centers);
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	} while (changed_points > points.size() * 0.01);
+}
+
+void kmeansp(unsigned clusters, std::vector<point_type> const & points
+	       , std::vector<group_info> & groups
+	       , std::vector<center_info> & centers)
+{
+	centers.resize(clusters);
+	
+	for(size_t i = 0; i < groups.size(); ++i)
+		groups[i].group_ = i % clusters;
+	auto nearest = [&centers](point_type const & p)
+	{
+		auto dist = std::numeric_limits<elt_type>::max();
+		int c = 0;
+		size_t i = 0, min_i = 0;
+		for(auto const & c : centers)
+		{
+			auto d = distance(p, c.point_);
+			if (d < dist)
+			{
+				min_i = i;
+				dist = d;
+			}
+			++i;
+		}
+		return min_i;
+	};
+	size_t changed_points = 0;
+	tf::Executor executor;
+	tf::Taskflow taskflow;
+	do {
+		for(auto & c : centers)
+		{
+			c.point_ = {0, 0};
+			c.count_ = 0;
+		}
+		for(size_t i = 0; i < points.size(); ++i)
+		{
+			center_info& c = centers[groups[i].group_];
+			c.count_++;
+			point_type const & p = points[i];
+			c.point_ += p;
+		}
+		for(auto & c : centers)
+			c.point_ /= c.count_;
+		
+		changed_points = 0;
+		// for(size_t i = 0; i < points.size(); ++i)
+		taskflow.parallel_for((int)0, (int)points.size(), 1,
+			[&](int i) {
+			point_type const & p = points[i];
+			group_info& g = groups[i];
+			auto gi = nearest(p);
+			if (gi != g.group_)
+			{
+				++changed_points;
+				g.group_ = gi;
+			}
+		},100000);
+		executor.run(taskflow).get();
+		// draw2(points, groups, &centers, &executor);
+		// std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	} while (changed_points > points.size() * 0.01);
 }
 
@@ -96,7 +158,7 @@ int main(int argc, char const *argv[])
 {
 	int ret = 0;
 	size_t n = 100;
-	int clusters = 3;
+	int clusters = 12;
 	if (argc > 1)
 	{
 		n = std::atoll(argv[1]);
@@ -108,24 +170,24 @@ int main(int argc, char const *argv[])
 	GDIPlus gdiplus;
 	generator gen;
 	std::vector<center_info> centers;
-	// std::vector<point_type> points(n);
-	std::vector<point_type> points;
+	std::vector<point_type> points(n);
+	// std::vector<point_type> points;
 	
-	// auto file_name = L"C:\\Users\\Arnold\\Pictures\\down_wallpaper_f800r_02_1280x1024.jpg";
-	// auto file_name = L"C:\\Users\\Arnold\\Pictures\\Passfotos3.png";
-	auto file_name = L"C:\\Users\\Arnold\\Pictures\\_MG_1166.jpg";
-	
-	points_from_image(file_name, points);
-	// for(auto & e : points)
-	// 	e = gen.random_point();
+	//auto file_name = L"C:\\Users\\Arnold\\Pictures\\down_wallpaper_f800r_02_1280x1024.jpg";
+	//auto file_name = L"C:\\Users\\Arnold\\Pictures\\Passfotos3.png";
+	//auto file_name = L"C:\\Users\\Arnold\\Pictures\\_MG_1166.jpg";
+
+	//points_from_image(file_name, points);
+	for(auto & e : points)
+	 	e = gen.random_point();
 
 	std::vector<group_info> groups(points.size());
 
 	draw2(points, groups);
 
-	kmeans(clusters, points, groups, centers);
+	kmeansp(clusters, points, groups, centers);
 
-	draw2(points, groups);
+	draw2(points, groups, &centers);
 
 	std::this_thread::sleep_for(std::chrono::seconds(5));
 	return ret;
