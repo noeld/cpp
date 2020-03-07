@@ -2,10 +2,12 @@
 
 #include "point.h"
 #include "group.h"
+#include "options.h"
+#undef max
+#include <taskflow/taskflow.hpp>
 #include <vector>
 #include <windows.h>
-#include <Gdiplus.h>
-#include <taskflow/taskflow.hpp>
+#include <gdiplus.h>
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -27,8 +29,11 @@ struct  GDIPlus
 
 void draw2(std::vector<point_type> const & points
 	     , std::vector<group_info> const & groups
+	     , runtime_options const & opt
 	     , std::vector<center_info> * centers = nullptr
-	     , tf::Executor* executor = nullptr);
+	     , tf::Executor* executor = nullptr
+		 , bounding_rect const * bounds = nullptr
+);
 
 /**
  * Retrieve point from an image:
