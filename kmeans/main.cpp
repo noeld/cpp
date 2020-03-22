@@ -40,7 +40,7 @@ struct generator
 {
     // std::random_device rd_;
     std::default_random_engine rd_;
-    std::uniform_real_distribution<elt_type> dist_r_{ 0.0, 1.0 }; 
+    std::uniform_real_distribution<elt_type> dist_r_; // { 0.0, 1.0 };
     std::uniform_real_distribution<elt_type> dist_a_ {0.0, 2.0 * M_PI};
     std::uniform_int_distribution<size_t> dist_p_;
     runtime_options const & opt_;

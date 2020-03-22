@@ -50,3 +50,10 @@ std::ostream& operator<<(std::ostream& o, bounding_rect const& r)
 {
 	return o << "[(" << r.min[0] << "; " << r.min[1] << "); (" << r.max[0] << "; " << r.max[1] << ")]";
 }
+
+
+
+std::tuple<point_type, size_t> kd_tree::nearest(point_type const& p) const
+{
+	return std::tuple<point_type, size_t>();
+}
