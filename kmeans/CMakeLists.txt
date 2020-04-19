@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 project(kmeans CXX)
+set(CMAKE_TOOLCHAIN_FILE c:/usr/vcpkg/scripts/buildsystems/vcpkg.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCES main.cpp draw.cpp draw.h point.cpp point.h group.cpp group.h timer.cpp timer.h options.cpp options.h)
 
 # set(Boost_DEBUG 1)
-set(BOOST_ROOT C:/usr/boost_1_70_0)
+#set(BOOST_ROOT C:/usr/boost_1_70_0)
+
 # set(BOOST_INCLUDEDIR C:/usr/boost_1_71_0_mgw/include/boost-1_71)
 # set(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib)
 
